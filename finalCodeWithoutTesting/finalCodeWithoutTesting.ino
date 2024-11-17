@@ -1,4 +1,3 @@
-//testing if this upload or not  
 #include <LiquidCrystal.h>
 #include <EEPROM.h>
 
