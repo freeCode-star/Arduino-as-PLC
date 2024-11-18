@@ -17,6 +17,8 @@ const int PNP_SENSOR_PIN = A1; // PNP sensor pin
 // Relay pin definitions
 const int RELAY1_PIN = 2;
 const int RELAY2_PIN = 3;
+const int TOGGLE_PIN_0 = 0; // Pin 0 (for Select Button)
+const int TOGGLE_PIN_1 = 1; // Pin 1 (for Left Button)
 
 // Initialize the LCD with the interface pins
 LiquidCrystal lcd(LCD_RS, LCD_ENABLE, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
@@ -54,9 +56,10 @@ char* menuItems[2] = { "1: Start"};
 
 char* settingItems[3] = {"Set R1", "Set D.Time", "Back"}; 
 int currentSettingSelection = 0;
+bool isTogglePin0Low = false; // Flag to track the state of TOGGLE_PIN_0
 
 void setup() {
-    Serial.begin(9600); // Initialize serial communication
+    // Serial.begin(9600); // Initialize serial communication
     lcd.begin(16, 2);
     pinMode(BACKLIGHT, OUTPUT);
     digitalWrite(BACKLIGHT, HIGH);
@@ -64,9 +67,13 @@ void setup() {
     pinMode(RELAY1_PIN, OUTPUT);
     pinMode(RELAY2_PIN, OUTPUT);
     pinMode(PNP_SENSOR_PIN, INPUT); // Set PNP sensor pin as input
-    
+        pinMode(TOGGLE_PIN_0, OUTPUT); // Pin 0 for Select Button Toggle
+    pinMode(TOGGLE_PIN_1, OUTPUT); // Pin 1 for Left Button Toggle
+
     digitalWrite(RELAY1_PIN, HIGH);
     digitalWrite(RELAY2_PIN, HIGH);
+        digitalWrite(TOGGLE_PIN_0, HIGH); // Set Pin 0 to LOW initially
+    digitalWrite(TOGGLE_PIN_1, HIGH); // Set Pin 1 to LOW initially
     
     // Load saved times from EEPROM with a default value fallback
     EEPROM.get(EEPROM_ADDR_R1_TIME, setR1Time);
@@ -107,19 +114,14 @@ void loop() {
     }
     
     if (inMainMenu) {
-        Serial.println("inMainMenu");
         handleMainMenu(buttonValue);
     } else if (inSettingsMode) {
-        Serial.println("inSettingsMode");
         handleSettingsMode(buttonValue);
     } else if (inSetR1Mode) {
-        Serial.println("inSetR1Mode");
         handleSetR1(buttonValue);
     } else if (inSetR2Mode) {
-        Serial.println("inSetR2Mode");
         handleDelayR2(buttonValue);
     } else if (inStartMode) {
-        Serial.println("inStartMode");
         handleStartMode();
     }
 
@@ -216,7 +218,7 @@ void handleSettingsMode(int buttonValue) {
 
 // New function to display the start mode
 void displayStartMode() {
-    Serial.println("start menu...");
+    // Serial.println("start menu...");
     inMainMenu = false;
     inStartMode = true;
     lcd.clear();
@@ -227,249 +229,18 @@ void displayStartMode() {
 // Add these declarations at the top with other global variables
 unsigned long delayStartTime = 0; // Timer for delay before Relay 2 activates
 float remainingDelayTime = 0.0;    // Remaining delay time before Relay 2 turns on
-
-// void handleStartMode() {
-//     static bool delayTimerStarted = false;
-//     static bool relay1Completed = false;
-//     static bool relay2Started = false;
-//     static bool cycleCompleted = false;
-//     static bool metalDetected = false;  // Metal detection flag
-
-//     // Step 1: Check for metal detection using the PNP sensor pin
-//     if (digitalRead(PNP_SENSOR_PIN) == HIGH) {  // Check if metal is detected
-//         metalDetected = true;
-//     }
-
-//     // Step 2: If metal is detected, reset the cycle and start from the beginning
-//     if (metalDetected) {
-//         // Reset all flags and states to restart the cycle
-//         relay1Completed = false;
-//         relay2Started = false;
-//         cycleCompleted = false;
-//         delayTimerStarted = false;
-//         isRelay1Active = false;
-//         digitalWrite(RELAY1_PIN, HIGH);  // Turn off Relay 1
-//         digitalWrite(RELAY2_PIN, HIGH);  // Turn off Relay 2
-        
-//         // Start the cycle from Relay 1
-//         metalDetected = false;  // Reset the metal detection flag
-//     }
-
-//     // Step 3: Start Relay 1 if it’s not active and the cycle hasn't completed
-//     if (!isRelay1Active && !delayTimerStarted && !relay1Completed && !cycleCompleted) {
-//         digitalWrite(RELAY1_PIN, LOW);        // Turn on Relay 1
-//         relay1StartTime = millis();            // Note start time for Relay 1
-//         delayStartTime = relay1StartTime;      // Start delay timer simultaneously
-//         isRelay1Active = true;
-//         delayTimerStarted = true;
-
-//         // Display R1 ON status and Delay Time text
-//         lcd.clear();
-//         lcd.print("R1 ON R2 OFF ");
-//         lcd.setCursor(13, 0);
-//         lcd.print(setR1Time, 1);
-//         lcd.setCursor(0, 1);
-//         lcd.print("Delay Time     ");           // Show "Delay Time" on line 2
-//         lcd.setCursor(13, 1);
-//         lcd.print(setDelayTime, 1);
-//     }
-
-//     // Step 4: Track Relay 1’s remaining time
-//     float elapsedR1 = (millis() - relay1StartTime) / 1000.0;
-//     float remainingR1 = setR1Time - elapsedR1;
-
-//     // Update LCD for Relay 1 status
-//     lcd.setCursor(13, 0);
-//     lcd.print(remainingR1 > 0 ? remainingR1 : 0.0, 1);
-
-//     // Step 5: Turn off Relay 1 when its timer completes
-//     if (remainingR1 <= 0 && isRelay1Active) {
-//         digitalWrite(RELAY1_PIN, HIGH);
-//         isRelay1Active = false;
-//         relay1Completed = true;
-
-//         // Display R1 OFF, delay countdown
-//         lcd.clear();
-//         lcd.print("R1 OFF R2 OFF");
-//         lcd.setCursor(0, 1);
-//         lcd.print("Delay Time     ");
-//         lcd.setCursor(13, 1);
-//         lcd.print(setDelayTime, 1);
-//     }
-
-//     // Step 6: Track delay time
-//     if (delayTimerStarted) {
-//         float elapsedDelay = (millis() - delayStartTime) / 1000.0;
-//         float remainingDelayTime = setDelayTime - elapsedDelay;
-
-//         // Update LCD for delay time
-//         lcd.setCursor(13, 1);
-//         lcd.print(remainingDelayTime > 0 ? remainingDelayTime : 0.0, 1);
-
-//         // Step 7: Start Relay 2 when delay completes
-//         if (remainingDelayTime <= 0 && relay1Completed && !relay2Started) {
-//             delayTimerStarted = false;        // Stop delay timer
-//             digitalWrite(RELAY2_PIN, LOW);   // Turn on Relay 2
-//             relay2StartTime = millis();       // Note start time for Relay 2
-//             relay2Started = true;
-
-//             // Display R2 ON status
-//             lcd.clear();
-//             lcd.print("R1 OFF R2 ON  ");
-//             lcd.setCursor(13, 0);
-//             lcd.print(setR1Time, 1);          // Show Relay 2 time (same as R1)
-//         }
-//     }
-
-//     // Step 8: Track Relay 2’s remaining time
-//     if (relay2Started) {
-//         float elapsedR2 = (millis() - relay2StartTime) / 1000.0;
-//         float remainingR2 = setR1Time - elapsedR2;
-
-//         // Update LCD for Relay 2 status
-//         lcd.setCursor(13, 0);
-//         lcd.print(remainingR2 > 0 ? remainingR2 : 0.0, 1);
-
-//         // Step 9: Turn off Relay 2 and end the cycle when R2's time completes
-//         if (remainingR2 <= 0) {
-//             digitalWrite(RELAY2_PIN, HIGH);    // Turn off Relay 2
-//             relay2Started = false;
-//             cycleCompleted = true;            // Mark cycle as completed
-
-//             // Display final OFF status for both relays
-//             lcd.clear();
-//             lcd.print("R1 OFF R2 OFF ");
-//             delay(1000); // Optional: brief delay to show final status
-//         }
-//     }
-// }
-
-// void handleStartMode() {
-//     static bool delayTimerStarted = false;
-//     static bool relay1Completed = false;
-//     static bool relay2Started = false;
-//     static bool cycleCompleted = false;
-//     static bool metalDetected = false;  // Metal detection flag
-//     static bool cycleInProgress = false; // Flag to check if the cycle is in progress
-
-//     // Step 1: Check for metal detection using the PNP sensor pin
-//     if (digitalRead(PNP_SENSOR_PIN) == HIGH) {  // Metal detected
-//         metalDetected = true;
-//     }
-
-//     // Step 2: If metal is detected, start/restart the cycle
-//     if (metalDetected && !cycleInProgress) {
-//         // Metal detected and cycle is not in progress, start the cycle
-//         cycleInProgress = true;  // Mark that a cycle has started
-//         metalDetected = false;   // Reset the metal detection flag
-
-//         // Reset all flags and states to restart the cycle
-//         relay1Completed = false;
-//         relay2Started = false;
-//         cycleCompleted = false;
-//         delayTimerStarted = false;
-//         isRelay1Active = false;
-//         digitalWrite(RELAY1_PIN, HIGH);  // Turn off Relay 1
-//         digitalWrite(RELAY2_PIN, HIGH);  // Turn off Relay 2
-        
-//         // Start the cycle from Relay 1
-//         digitalWrite(RELAY1_PIN, LOW);        // Turn on Relay 1
-//         relay1StartTime = millis();            // Note start time for Relay 1
-//         delayStartTime = relay1StartTime;      // Start delay timer simultaneously
-//         isRelay1Active = true;
-//         delayTimerStarted = true;
-
-//         // Display R1 ON status and Delay Time text
-//         lcd.clear();
-//         lcd.print("R1 ON R2 OFF ");
-//         lcd.setCursor(13, 0);
-//         lcd.print(setR1Time, 1);
-//         lcd.setCursor(0, 1);
-//         lcd.print("Delay Time     ");           // Show "Delay Time" on line 2
-//         lcd.setCursor(13, 1);
-//         lcd.print(setDelayTime, 1);
-//     }
-
-//     // Step 3: Continue as usual if Relay 1 is running
-//     if (isRelay1Active && !relay1Completed && !cycleCompleted) {
-//         float elapsedR1 = (millis() - relay1StartTime) / 1000.0;
-//         float remainingR1 = setR1Time - elapsedR1;
-
-//         // Update LCD for Relay 1 status
-//         lcd.setCursor(13, 0);
-//         lcd.print(remainingR1 > 0 ? remainingR1 : 0.0, 1);
-
-//         // Step 4: Turn off Relay 1 when its timer completes
-//         if (remainingR1 <= 0 && isRelay1Active) {
-//             digitalWrite(RELAY1_PIN, HIGH);
-//             isRelay1Active = false;
-//             relay1Completed = true;
-
-//             // Display R1 OFF, delay countdown
-//             lcd.clear();
-//             lcd.print("R1 OFF R2 OFF");
-//             lcd.setCursor(0, 1);
-//             lcd.print("Delay Time     ");
-//             lcd.setCursor(13, 1);
-//             lcd.print(setDelayTime, 1);
-//         }
-//     }
-
-//     // Step 5: Track delay time for Relay 2
-//     if (delayTimerStarted) {
-//         float elapsedDelay = (millis() - delayStartTime) / 1000.0;
-//         float remainingDelayTime = setDelayTime - elapsedDelay;
-
-//         // Update LCD for delay time
-//         lcd.setCursor(13, 1);
-//         lcd.print(remainingDelayTime > 0 ? remainingDelayTime : 0.0, 1);
-
-//         // Step 6: Start Relay 2 when delay completes
-//         if (remainingDelayTime <= 0 && relay1Completed && !relay2Started) {
-//             delayTimerStarted = false;        // Stop delay timer
-//             digitalWrite(RELAY2_PIN, LOW);    // Turn on Relay 2
-//             relay2StartTime = millis();       // Note start time for Relay 2
-//             relay2Started = true;
-
-//             // Display R2 ON status
-//             lcd.clear();
-//             lcd.print("R1 OFF R2 ON  ");
-//             lcd.setCursor(13, 0);
-//             lcd.print(setR1Time, 1);          // Show Relay 2 time (same as R1)
-//         }
-//     }
-
-//     // Step 7: Track Relay 2’s remaining time
-//     if (relay2Started) {
-//         float elapsedR2 = (millis() - relay2StartTime) / 1000.0;
-//         float remainingR2 = setR1Time - elapsedR2;
-
-//         // Update LCD for Relay 2 status
-//         lcd.setCursor(13, 0);
-//         lcd.print(remainingR2 > 0 ? remainingR2 : 0.0, 1);
-
-//         // Step 8: Turn off Relay 2 and end the cycle when R2's time completes
-//         if (remainingR2 <= 0) {
-//             digitalWrite(RELAY2_PIN, HIGH);    // Turn off Relay 2
-//             relay2Started = false;
-//             cycleCompleted = true;            // Mark cycle as completed
-//             cycleInProgress = false;          // Reset cycle in progress flag
-
-//             // Display final OFF status for both relays
-//             lcd.clear();
-//             lcd.print("R1 OFF R2 OFF ");
-//             delay(1000); // Optional: brief delay to show final status
-//         }
-//     }
-// }
-
+bool toggleState = true; // Initially set to HIGH
+bool buttonPressedD = false; // Initially set to HIGH
 void handleStartMode() {
+
+
     static bool delayTimerStarted = false;
     static bool relay1Completed = false;
     static bool relay2Started = false;
     static bool cycleCompleted = false;
     static bool metalDetected = false;  // Metal detection flag
     static bool cycleInProgress = false; // Flag to track if the cycle is in progress
+    // int buttonValue = analogRead(BUTTON_PIN);  // Read the button value
 
     // Step 1: Check for metal detection using the PNP sensor pin
     if (digitalRead(PNP_SENSOR_PIN) == HIGH) {  // Metal detected
@@ -579,6 +350,7 @@ void handleStartMode() {
             lcd.print("R1 OFF R2 OFF ");
             delay(1000); // Optional: brief delay to show final status
         }
+        
     }
 
     // Step 9: If metal is detected during the cycle, restart the cycle
@@ -612,11 +384,12 @@ void handleStartMode() {
 
         metalDetected = false;  // Reset metal detection flag to avoid unwanted multiple triggers
     }
+    
 }
-=====================
+
 // Display the settings menu
 void displaySettingsMenu() {
-    Serial.println("display menu setting");
+    // Serial.println("display menu setting");
     lcd.clear();
     for (int i = 0; i < 2; i++) {
         lcd.setCursor(1, i);
