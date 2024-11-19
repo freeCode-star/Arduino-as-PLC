@@ -106,25 +106,6 @@ void loop() {
     buttonPressed = false;  // Button released
   }
 
-  if (buttonValue < buttonValues[0]) {
-    if (!buttonPressed) {
-      buttonPressed = true;
-      buttonPressStartTime = millis();  // Start timer for long press
-      longPressDetected = false;        // Reset long press flag
-    }
-    // Check if button is being held down for more than 3 seconds
-    if (millis() - buttonPressStartTime > 3000 && !longPressDetected) {
-      longPressDetected = true;  // Set long press detected flag
-      if (!inSettingsMode) {
-        enterSettingsMode();  // Open settings if not already in settings mode
-      }
-    }
-  } else {
-    buttonPressed = false;  // Reset button pressed state
-    if (longPressDetected) {
-      longPressDetected = false;  // Reset long press flag
-    }
-  }
   // Check if the external button (D1) is pressed (GND) to enter Start Mode
   if (externalButtonState == LOW && !buttonPressed) {
     // Button is pressed (shorted to GND)
