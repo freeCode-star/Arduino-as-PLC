@@ -11,6 +11,9 @@ const int LCD_D7 = 7;
 const int BACKLIGHT = 10;
 const int BUTTON_PIN = A0;      // Button connected to A0 pin
 const int PNP_SENSOR_PIN = A1;  // PNP sensor pin
+// #define PNP_SENSOR_PIN 4  // Select pin 4 for PNP sensor
+// #define PNP_SENSOR_PIN 8  // Try changing to a different pin
+#define PNP_SENSOR_PIN A2
 // Relay pin definitions
 const int RELAY1_PIN = 2;
 const int RELAY2_PIN = 3;
@@ -168,7 +171,7 @@ void enterStartMode() {
                // Do NOT call handleStartMode() here to prevent immediate cycle start
 }
 void stopSystem() {
-    digitalWrite(A3_PIN, HIGH);  // Set A3 to LOW when start mode is entered
+    digitalWrite(A3, HIGH);  // Set A3 to LOW when start mode is entered
     digitalWrite(RELAY1_PIN, LOW);
   digitalWrite(RELAY2_PIN, LOW);
     inStartMode = false;
@@ -270,7 +273,7 @@ void handleStartMode() {
   static bool cycleCompleted = false;
   static bool metalDetected = false;    // Metal detection flag
   static bool cycleInProgress = false;  // Flag to track if the cycle is in progress
-  digitalWrite(A3_PIN, LOW);  // Set A3 to LOW when start mode is entered
+  digitalWrite(A3, LOW);  // Set A3 to LOW when start mode is entered
 
   // Check for metal detection using the PNP sensor pin
   if (digitalRead(PNP_SENSOR_PIN) == HIGH) {  // Metal detected
