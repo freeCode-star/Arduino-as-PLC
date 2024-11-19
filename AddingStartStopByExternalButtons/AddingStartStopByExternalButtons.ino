@@ -10,20 +10,14 @@ const int LCD_D6 = 6;
 const int LCD_D7 = 7;
 const int BACKLIGHT = 10;
 const int BUTTON_PIN = A0;      // Button connected to A0 pin
-const int PNP_SENSOR_PIN = A1;  // PNP sensor pin
-// #define PNP_SENSOR_PIN 4  // Select pin 4 for PNP sensor
-// #define PNP_SENSOR_PIN 8  // Try changing to a different pin
 #define PNP_SENSOR_PIN A2
 // Relay pin definitions
 const int RELAY1_PIN = 2;
 const int RELAY2_PIN = 3;
-
 // Initialize the LCD with the interface pins
 LiquidCrystal lcd(LCD_RS, LCD_ENABLE, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
-
 // Button value thresholds
 int buttonValues[5] = { 50, 200, 400, 600, 800 };
-
 int currentSelection = 0;
 bool inSettingsMode = false;
 bool inMainMenu = true;
@@ -45,18 +39,12 @@ bool longPressDetected = false;          // Flag for long press
 unsigned long relayDelayStartTime = 0;   // Timer for delay before Relay 2 activates
 const int EXTERNAL_BUTTON_PIN = 1;       // D1 pin for the external button
 float previousR1Time = -1.0;  // Initialize with a value that's unlikely to match the default value
-
 // EEPROM addresses for saving times
 const int EEPROM_ADDR_R1_TIME = 0;
 const int EEPROM_ADDR_R2_TIME = 4;  // Different EEPROM address for Set R2
 const int A3_PIN = A3;              // Pin A3 for controlling an external device
-
-// Menu items
-// char* menuItems[2] = {"1: Settings", "2: Start"};
-// char* menuItems[2] = { "1: Start" };
 // Menu items in the main menu
 char* menuItems[2] = {"1: Settings" };  // Add Settings option
-
 char* settingItems[3] = { "Set R1", "Set D.Time", "Back" };
 int currentSettingSelection = 0;
 
@@ -71,10 +59,8 @@ void setup() {
   pinMode(PNP_SENSOR_PIN, INPUT);              // Set PNP sensor pin as input
   pinMode(EXTERNAL_BUTTON_PIN, INPUT_PULLUP);  // External button pin (with internal pull-up resistor)
   pinMode(A3_PIN, OUTPUT);                     // A3 pin set as output
-
   digitalWrite(RELAY1_PIN, LOW);
   digitalWrite(RELAY2_PIN, LOW);
-
   // Load saved times from EEPROM with a default value fallback
   EEPROM.get(EEPROM_ADDR_R1_TIME, setR1Time);
   EEPROM.get(EEPROM_ADDR_R2_TIME, setDelayTime);
@@ -85,7 +71,6 @@ void setup() {
   if (isnan(setDelayTime) || setDelayTime < 0.0 || setDelayTime > 99.9) {
     setDelayTime = 0.0;
   }
-
   displayMenu();
 }
 
@@ -105,7 +90,6 @@ void loop() {
   } else if (externalButtonState == HIGH && buttonPressed) {
     buttonPressed = false;  // Button released
   }
-
   // Check if the external button (D1) is pressed (GND) to enter Start Mode
   if (externalButtonState == LOW && !buttonPressed) {
     // Button is pressed (shorted to GND)
@@ -117,7 +101,6 @@ void loop() {
     buttonPressed = false;
     Serial.println("External button released.");
   }
-
   // Handle other modes based on buttonValue (main menu, settings, etc.)
   if (inMainMenu) {
     handleMainMenu(buttonValue);
@@ -130,7 +113,6 @@ void loop() {
   } else if (inStartMode) {
     handleStartMode();
   }
-
   // Handle button press to navigate back
   if (buttonValue < buttonValues[0] && !buttonPressed) {  // Right button
     buttonPressed = true;
