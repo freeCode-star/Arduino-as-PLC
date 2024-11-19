@@ -53,7 +53,9 @@ const int A3_PIN = A3;              // Pin A3 for controlling an external device
 
 // Menu items
 // char* menuItems[2] = {"1: Settings", "2: Start"};
-char* menuItems[2] = { "1: Start" };
+// char* menuItems[2] = { "1: Start" };
+// Menu items in the main menu
+char* menuItems[2] = {"1: Settings" };  // Add Settings option
 
 char* settingItems[3] = { "Set R1", "Set D.Time", "Back" };
 int currentSettingSelection = 0;
@@ -201,16 +203,23 @@ void stopSystem() {
 }
 
 void handleMainMenu(int buttonValue) {
-  if (buttonValue < buttonValues[1] && !buttonPressed) {
-    // No up button action needed since only one item is available
-  } else if (buttonValue < buttonValues[2] && !buttonPressed) {
-    // No down button action needed since only one item is available
-  } else if (buttonValue < buttonValues[4] && !buttonPressed) {
+  if (buttonValue < buttonValues[1] && !buttonPressed) {  // Down button pressed
     buttonPressed = true;
-    // Directly start without checking selection
-    digitalWrite(RELAY1_PIN, LOW);
-    digitalWrite(RELAY2_PIN, LOW);
-    displayStartMode();
+    if (currentSelection < 0) { // Prevent scrolling beyond the only menu option
+      currentSelection++;
+      displayMenu();  // Refresh the display with updated selection
+    }
+  } else if (buttonValue < buttonValues[2] && !buttonPressed) {  // Up button pressed
+    buttonPressed = true;
+    if (currentSelection > 0) {  // Prevent scrolling beyond the only menu option
+      currentSelection--;
+      displayMenu();  // Refresh the display with updated selection
+    }
+  } else if (buttonValue < buttonValues[4] && !buttonPressed) {  // Select button pressed
+    buttonPressed = true;
+    if (currentSelection == 0) {  // If "Settings" is selected
+      enterSettingsMode();  // Enter the Settings menu
+    }
   }
 }
 
@@ -227,39 +236,39 @@ void displayMenu() {
 }
 
 void enterSettingsMode() {
-  inSettingsMode = true;
-  inMainMenu = false;
-  currentSettingSelection = 0;
-  displaySettingsMenu();
+    inSettingsMode = true;
+    inMainMenu = false;
+    currentSettingSelection = 0;
+    displaySettingsMenu();
 }
 
 void handleSettingsMode(int buttonValue) {
-  if (buttonValue < buttonValues[1] && !buttonPressed) {
-    if (currentSettingSelection > 0) {
-      currentSettingSelection--;
-      displaySettingsMenu();
+    if (buttonValue < buttonValues[1] && !buttonPressed) { 
+        if (currentSettingSelection > 0) {
+            currentSettingSelection--;
+            displaySettingsMenu();
+        }
+    } else if (buttonValue < buttonValues[2] && !buttonPressed) { 
+        if (currentSettingSelection < 2) {
+            currentSettingSelection++;
+            displaySettingsMenu();
+        }
+    } else if (buttonValue < buttonValues[4] && !buttonPressed) {
+        buttonPressed = true;
+        if (currentSettingSelection == 2) {
+            inSettingsMode = false;
+            inMainMenu = true;
+            displayMenu();
+        } else if (currentSettingSelection == 0) {
+            inSetR1Mode = true;
+            inSettingsMode = false;
+            displaySetR1();
+        } else if (currentSettingSelection == 1) {
+            inSetR2Mode = true;
+            inSettingsMode = false;
+            displaySetR2();
+        }
     }
-  } else if (buttonValue < buttonValues[2] && !buttonPressed) {
-    if (currentSettingSelection < 2) {
-      currentSettingSelection++;
-      displaySettingsMenu();
-    }
-  } else if (buttonValue < buttonValues[4] && !buttonPressed) {
-    buttonPressed = true;
-    if (currentSettingSelection == 2) {
-      inSettingsMode = false;
-      inMainMenu = true;
-      displayMenu();
-    } else if (currentSettingSelection == 0) {
-      inSetR1Mode = true;
-      inSettingsMode = false;
-      displaySetR1();
-    } else if (currentSettingSelection == 1) {
-      inSetR2Mode = true;
-      inSettingsMode = false;
-      displaySetR2();
-    }
-  }
 }
 
 // New function to display the start mode
@@ -462,50 +471,46 @@ void handleStartMode() {
 
 // Display the settings menu
 void displaySettingsMenu() {
-  Serial.println("display menu setting");
-  lcd.clear();
-  for (int i = 0; i < 2; i++) {
-    lcd.setCursor(1, i);
-    if (currentSettingSelection + i < 3) {
-      lcd.print(settingItems[currentSettingSelection + i]);
+    // Serial.println("display menu setting");
+    lcd.clear();
+    for (int i = 0; i < 2; i++) {
+        lcd.setCursor(1, i);
+        if (currentSettingSelection + i < 3) {
+            lcd.print(settingItems[currentSettingSelection + i]);
+        }
     }
-  }
-  lcd.setCursor(0, 0);
-  lcd.write('>');
+    lcd.setCursor(0, 0);
+    lcd.write('>');
 }
 
+// Display the R1 time setting screen
 void displaySetR1() {
-  lcd.clear();
-  lcd.print("Set R1 Time:");
-  lcd.setCursor(0, 1);
-  lcd.print(setR1Time, 1);  // Display time with one decimal place
-  lcd.print(" sec");
+    lcd.clear();
+    lcd.print("Set R1 Time:");
+    lcd.setCursor(0, 1);
+    lcd.print(setR1Time, 1);
+    lcd.print(" sec");
 }
 
 void handleSetR1(int buttonValue) {
-  if (buttonValue < buttonValues[1] && !buttonPressed) {  // Up button
-    setR1Time += stepSize;
-    if (setR1Time > 99.9) setR1Time = 99.9;  // Max limit
-    displaySetR1();
-  } else if (buttonValue < buttonValues[2] && !buttonPressed) {  // Down button
-    setR1Time -= stepSize;
-    if (setR1Time < 0.0) setR1Time = 0.0;  // Min limit
-    displaySetR1();
-  } else if (buttonValue < buttonValues[4] && !buttonPressed) {  // Select button
-    buttonPressed = true;
-    // Save time to EEPROM
-    // EEPROM.put(EEPROM_ADDR_R1_TIME, setR1Time);
-    if (setR1Time != previousR1Time) {
-      EEPROM.put(EEPROM_ADDR_R1_TIME, setR1Time);
-      previousR1Time = setR1Time;  // Update previousR1Time to the current value
+    if (buttonValue < buttonValues[1] && !buttonPressed) { 
+        setR1Time += stepSize;
+        if (setR1Time > 99.9) setR1Time = 99.9;
+        displaySetR1();
+    } else if (buttonValue < buttonValues[2] && !buttonPressed) {
+        setR1Time -= stepSize;
+        if (setR1Time < 0.0) setR1Time = 0.0;
+        displaySetR1();
+    } else if (buttonValue < buttonValues[4] && !buttonPressed) {
+        buttonPressed = true;
+        EEPROM.put(EEPROM_ADDR_R1_TIME, setR1Time);
+        lcd.clear();
+        lcd.print("Successfully set");
+        delay(2000);
+        inSetR1Mode = false;
+        inSettingsMode = true;
+        displaySettingsMenu();
     }
-    lcd.clear();
-    lcd.print("Successfully set");
-    delay(2000);
-    inSetR1Mode = false;
-    inSettingsMode = true;
-    displaySettingsMenu();
-  }
 }
 
 void displaySetR2() {
