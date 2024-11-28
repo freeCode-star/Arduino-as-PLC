@@ -16,9 +16,9 @@ Step-by-Step Process for Designing a Toroidal Coil
 For example, let’s assume you need a 5A or 10A current rating at 230V RMS for your application. The power requirement can be calculated as:
 
     For 5A at 230V:
-    P=V×I=230 V×5 A=1150 W
+    P=V×I=230 V×5 A=1150W
     P=V×I=230V×5A=1150W
-
+  
     So, the coil needs to handle 1150W of power.
 
     For 10A at 230V:
