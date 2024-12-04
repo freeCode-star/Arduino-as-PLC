@@ -12,7 +12,6 @@ Key Parameters for Designing a Toroidal Coil
 
 Step-by-Step Process for Designing a Toroidal Coil
 1. Determine Power and Current Requirements
-
 For example, let’s assume you need a 5A or 10A current rating at 230V RMS for your application. The power requirement can be calculated as:
 
     For 5A at 230V:
