@@ -331,3 +331,10 @@ Start Mode:
 Starts and stops the machine cycle.
 Controls the relays based on timers and metal detection.
 Displays status information on the LCD.
+
+Arduino as PLC our first Modal image
+
+![IMG_20241207_173150](https://github.com/user-attachments/assets/99b66850-19f5-420b-a750-91ea3ef07f56)
+
+![IMG_20241207_173205](https://github.com/user-attachments/assets/83ae4d3f-e9c1-4104-a83d-8362ac8bef66)
+
