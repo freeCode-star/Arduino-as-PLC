@@ -22,18 +22,17 @@ int currentSelection = 0;
 bool inSettingsMode = false;
 bool inMainMenu = true;
 bool inSetR1Mode = false;
-bool inSetDelayMode = false;
-bool inSetR3Mode = false;
+bool inSetR2Mode = false;
+bool inSetDelayTimeMode = false;
 bool inStartMode = false;  // New flag for Start mode
 bool isOff = false;
 bool buttonPressed = false;
 float setR1Time = 0.0;     // Time for Relay 1
-float setDelayTime = 0.0;  // Time for Delay 
-float setR3Time = 0.0;     // Time for Relay 2
+float setDelayTime = 0.0;  // delay time for Relay 2
+float setR2Time = 0.0; // Time for Relay 2
 float stepSize = 0.1;      // Increment/Decrement step size
 unsigned long relay1StartTime = 0;
-unsigned long relay2DelayTime = 0;
-unsigned long relay3StartTime = 0;
+unsigned long relay2StartTime = 0;
 bool isRelay1Active = false;             // Track if Relay 1 is active
 bool isRelay2Active = false;             // Track if Relay 2 is active
 bool flag = false;                       // Track if Relay 2 is active
@@ -44,18 +43,20 @@ const int EXTERNAL_BUTTON_PIN = 1;       // D1 pin for the external button
 float previousR1Time = -1.0;             // Initialize with a value that's unlikely to match the default value
 // EEPROM addresses for saving times
 const int EEPROM_ADDR_R1_TIME = 0;
-const int EEPROM_ADDR_DELAY_TIME = 4;  // Different EEPROM address for Set R2
-const int EEPROM_ADDR_R3_TIME = 8;  // Different EEPROM address for Set R2
+const int EEPROM_ADDR_R2_TIME = 4;  // Different EEPROM address for Set R2
+const int EEPROM_ADDR_R3_TIME = 8;  // relay 2 on time
+
 const int A2_PIN = A2;              // Pin A2 for controlling an external device
 // Menu items in the main menu
 char* menuItems[2] = { "1: Settings" };  // Add Settings option
-char* settingItems[4] = { "PUMP Close Time", "PUMP Delay Time", "PUMP Open Time", "Back" };
+char* settingItems[4] = { "P. Close Time", "P ON Time", "Delay Time", "Back" };
 int currentSettingSelection = 0;
 bool isCycleRunning = false;  // Flag to track if the cycle is running
 const int D0_PIN = 0;         // Pin D0 to detect the short circuit
 const int A3_PIN = A3;        // Pin A3 to toggle between HIGH and LOW
 bool previousD0State = HIGH;  // To store the previous state of D0
-bool currentStateA3 = HIGH;   // The current state of A3 (starting as LOW)
+bool currentStateA3 = HIGH;    // The current state of A3 (starting as LOW)
+String message = "AUM AUTOMATION ENGINEERING";
 
 void setup() {
   // Serial.begin(9600);  // Initialize serial communication
@@ -66,29 +67,18 @@ void setup() {
   pinMode(RELAY2_PIN, OUTPUT);
   pinMode(PNP_SENSOR_PIN, INPUT);              // Set PNP sensor pin as input
   pinMode(EXTERNAL_BUTTON_PIN, INPUT_PULLUP);  // External button pin (with internal pull-up resistor)
-  pinMode(A2_PIN, OUTPUT);
-  digitalWrite(A2_PIN, HIGH);  // A2 pin set as output
+  pinMode(A2_PIN, OUTPUT); 
+  digitalWrite(A2_PIN, HIGH);                    // A2 pin set as output
   digitalWrite(RELAY1_PIN, HIGH);
   digitalWrite(RELAY2_PIN, HIGH);
   pinMode(D0_PIN, INPUT_PULLUP);         // Set D0 as an input with pull-up resistor enabled
   pinMode(A3_PIN, OUTPUT);               // Set A3 as an output
   digitalWrite(A3_PIN, currentStateA3);  // Initialize A3 to LOW
-  // Scroll text "AUMAUTOMATION ENGINEERING" for 2 seconds
-  lcd.clear();
-  lcd.print("AUMAUTOMATION Engg.");
-  
-  // Scroll the text from right to left
-  // for (int i = 0; i < 16 + strlen("AUMAUTOMATION ENGINEERING"); i++) {
-  //   lcd.scrollDisplayLeft();  // Scroll the text
-  //   delay(300);  // Adjust the speed of scrolling (increase or decrease the delay)
-  // }
-  
-  // Wait for 2 seconds after the scrolling is done
-  delay(1000);  // Wait for 2 seconds
   // Load saved times from EEPROM with a default value fallback
   EEPROM.get(EEPROM_ADDR_R1_TIME, setR1Time);
-  EEPROM.get(EEPROM_ADDR_DELAY_TIME, setDelayTime);
-  EEPROM.get(EEPROM_ADDR_R3_TIME, setR3Time);
+  EEPROM.get(EEPROM_ADDR_R2_TIME, setDelayTime);
+  EEPROM.get(EEPROM_ADDR_R3_TIME, setR2Time);
+
   // If R1 or R2 time are uninitialized, assign default values
   if (isnan(setR1Time) || setR1Time < 0.0 || setR1Time > 99.9) {
     setR1Time = 0.0;
@@ -96,8 +86,8 @@ void setup() {
   if (isnan(setDelayTime) || setDelayTime < 0.0 || setDelayTime > 99.9) {
     setDelayTime = 0.0;
   }
-  if (isnan(setR3Time) || setR3Time < 0.0 || setR3Time > 99.9) {
-    setR3Time = 0.0;
+    if (isnan(setR2Time) || setR2Time < 0.0 || setR2Time > 99.9) {
+    setR2Time = 0.0;
   }
   displayMenu();
 }
@@ -148,11 +138,11 @@ void loop() {
     handleSettingsMode(buttonValue);
   } else if (inSetR1Mode) {
     handleSetR1(buttonValue);
-  } else if (inSetDelayMode) {
+  } else if (inSetR2Mode) {
+    handleSetR2(buttonValue);
+  } else if (inSetDelayTimeMode) {
     handleDelayR2(buttonValue);
-  }  else if (inSetR3Mode) {
-    handleDelayR3(buttonValue);
-  }else if (inStartMode) {
+  } else if (inStartMode) {
     handleStartMode();
   }
   // Handle button press to navigate back
@@ -162,15 +152,15 @@ void loop() {
       inSetR1Mode = false;
       inSettingsMode = true;
       displaySettingsMenu();
-    } else if (inSetDelayMode) {
-      inSetDelayMode = false;
+    } else if (inSetR2Mode) {
+      inSetR2Mode = false;
       inSettingsMode = true;
       displaySettingsMenu();
-    }  else if (inSetR3Mode) {
-      inSetR3Mode = false;
+    } else if (inSetDelayTimeMode) {
+      inSetDelayTimeMode = false;
       inSettingsMode = true;
       displaySettingsMenu();
-    }else if (inStartMode) {
+    } else if (inStartMode) {
       // Turn off both relays
       digitalWrite(RELAY1_PIN, LOW);
       digitalWrite(RELAY2_PIN, LOW);
@@ -271,7 +261,7 @@ void handleSettingsMode(int buttonValue) {
     }
   } else if (buttonValue < buttonValues[4] && !buttonPressed) {
     buttonPressed = true;
-    if (currentSettingSelection == 3) {
+    if (currentSettingSelection == 2) {
       inSettingsMode = false;
       inMainMenu = true;
       displayMenu();
@@ -280,14 +270,9 @@ void handleSettingsMode(int buttonValue) {
       inSettingsMode = false;
       displaySetR1();
     } else if (currentSettingSelection == 1) {
-      inSetDelayMode = true;
+      inSetDelayTimeMode = true;
       inSettingsMode = false;
-      displaySetR2();
-    }
-    else if (currentSettingSelection == 2) {
-      inSetR3Mode = true;
-      inSettingsMode = false;
-      displaySetR3();
+      displaySetDelayTime();
     }
   }
 }
@@ -313,7 +298,7 @@ void handleStartMode() {
   static bool cycleCompleted = false;
   static bool metalDetected = false;    // Metal detection flag
   static bool cycleInProgress = false;  // Flag to track if the cycle is in progress
-  digitalWrite(A2_PIN, LOW);            // Set A2 to LOW when start mode is entered
+  digitalWrite(A2_PIN, LOW);           // Set A2 to LOW when start mode is entered
 
   // Check for metal detection using the PNP sensor pin
   if (digitalRead(PNP_SENSOR_PIN) == HIGH) {  // Metal detected
@@ -391,21 +376,21 @@ void handleStartMode() {
     if (remainingDelayTime <= 0 && relay1Completed && !relay2Started) {
       delayTimerStarted = false;      // Stop delay timer
       digitalWrite(RELAY2_PIN, LOW);  // Turn on Relay 2
-      relay2DelayTime = millis();     // Note start time for Relay 2
+      relay2StartTime = millis();     // Note start time for Relay 2
       relay2Started = true;
 
       // Display R2 ON status
       lcd.clear();
       lcd.print("R1 OFF R2 ON  ");
       lcd.setCursor(13, 0);
-      lcd.print(setR3Time, 1);  // Show Relay 2 time (same as R1)
+      lcd.print(setR2Time, 1);  // Show Relay 2 time (same as R1)
     }
   }
 
   // Step 6: Track Relay 2’s remaining time
   if (relay2Started) {
-    float elapsedR2 = (millis() - relay2DelayTime) / 1000.0;
-    float remainingR2 = setR3Time - elapsedR2;
+    float elapsedR2 = (millis() - relay2StartTime) / 1000.0;
+    float remainingR2 = setR2Time - elapsedR2;
 
     // Update LCD for Relay 2 status
     lcd.setCursor(13, 0);
@@ -494,7 +479,7 @@ void handleStartMode() {
 void displaySettingsMenu() {
   // Serial.println("display menu setting");
   lcd.clear();
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 3; i++) {
     lcd.setCursor(1, i);
     if (currentSettingSelection + i < 4) {
       lcd.print(settingItems[currentSettingSelection + i]);
@@ -507,9 +492,18 @@ void displaySettingsMenu() {
 // Display the R1 time setting screen
 void displaySetR1() {
   lcd.clear();
-  lcd.print("Set Pump Close Time:");
+  lcd.print("Set R1 Time:");
   lcd.setCursor(0, 1);
   lcd.print(setR1Time, 1);
+  lcd.print(" sec");
+}
+
+// Display the R1 time setting screen
+void displaySetR2() {
+  lcd.clear();
+  lcd.print("Set R2 Time:");
+  lcd.setCursor(0, 1);
+  lcd.print(setR2Time, 1);
   lcd.print(" sec");
 }
 
@@ -534,9 +528,30 @@ void handleSetR1(int buttonValue) {
   }
 }
 
-void displaySetR2() {
+void handleSetR2(int buttonValue) {
+  if (buttonValue < buttonValues[1] && !buttonPressed) {
+    setR2Time += stepSize;
+    if (setR2Time > 99.9) setR2Time = 99.9;
+    displaySetR2();
+  } else if (buttonValue < buttonValues[2] && !buttonPressed) {
+    setR2Time -= stepSize;
+    if (setR2Time < 0.0) setR2Time = 0.0;
+    displaySetR2();
+  } else if (buttonValue < buttonValues[4] && !buttonPressed) {
+    buttonPressed = true;
+    EEPROM.put(EEPROM_ADDR_R3_TIME, setR2Time);
+    lcd.clear();
+    lcd.print("Successfully set");
+    delay(2000);
+    inSetR1Mode = false;
+    inSettingsMode = true;
+    displaySettingsMenu();
+  }
+}
+
+void displaySetDelayTime() {
   lcd.clear();
-  lcd.print("Pump Delay Time:");
+  lcd.print("Set Delay Time:");
   lcd.setCursor(0, 1);
   lcd.print(setDelayTime, 1);  // Display time with one decimal place
   lcd.print(" sec");
@@ -546,51 +561,19 @@ void handleDelayR2(int buttonValue) {
   if (buttonValue < buttonValues[1] && !buttonPressed) {  // Up button
     setDelayTime += stepSize;
     if (setDelayTime > 99.9) setDelayTime = 99.9;  // Max limit
-    displaySetR2();
+    displaySetDelayTime();
   } else if (buttonValue < buttonValues[2] && !buttonPressed) {  // Down button
     setDelayTime -= stepSize;
     if (setDelayTime < 0.0) setDelayTime = 0.0;  // Min limit
-    displaySetR2();
+    displaySetDelayTime();
   } else if (buttonValue < buttonValues[4] && !buttonPressed) {  // Select button
     buttonPressed = true;
     // Save time to EEPROM
-    EEPROM.put(EEPROM_ADDR_DELAY_TIME, setDelayTime);
+    EEPROM.put(EEPROM_ADDR_R2_TIME, setDelayTime);
     lcd.clear();
     lcd.print("Successfully set");
     delay(2000);
-    inSetDelayMode = false;
-    inSettingsMode = true;
-    displaySettingsMenu();
-  }
-}
-
-void displaySetR3() {
-  lcd.clear();
-  lcd.print("Pump Open Time:");
-  lcd.setCursor(0, 1);
-  // lcd.print(setR3time, 1);  // Display time with one decimal place
-  lcd.print(setR3Time, 1);  // Display time with one decimal place
-
-  lcd.print(" sec");
-}
-
-void handleDelayR3(int buttonValue) {
-  if (buttonValue < buttonValues[1] && !buttonPressed) {  // Up button
-    setR3Time += stepSize;
-    if (setR3Time > 99.9) setR3Time = 99.9;  // Max limit
-    displaySetR3();
-  } else if (buttonValue < buttonValues[2] && !buttonPressed) {  // Down button
-    setR3Time -= stepSize;
-    if (setR3Time < 0.0) setR3Time = 0.0;  // Min limit
-    displaySetR3();
-  } else if (buttonValue < buttonValues[4] && !buttonPressed) {  // Select button
-    buttonPressed = true;
-    // Save time to EEPROM
-    EEPROM.put(EEPROM_ADDR_R3_TIME, setR3Time);
-    lcd.clear();
-    lcd.print("Successfully set");
-    delay(2000);
-    inSetR3Mode = false;
+    inSetDelayTimeMode = false;
     inSettingsMode = true;
     displaySettingsMenu();
   }
