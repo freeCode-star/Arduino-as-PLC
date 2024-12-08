@@ -1,0 +1,104 @@
+1st Feature: Toggle Switch (Relay 1 Control)
+Goal: When the toggle switch is pressed, Relay 1 should turn ON. When released, Relay 1 should turn OFF.
+Wiring:
+Connect one leg of the toggle switch to a GPIO pin on the ESP32 (e.g., GPIO 12).
+Connect the other leg of the toggle switch to GND.
+The relay module should be connected to another GPIO pin (e.g., GPIO 14).
+Code: Use a simple digitalRead() function to check if the toggle switch is pressed and control Relay 1 accordingly.
+2nd Feature: Push Button (Relay 2 Control)
+Goal: When the push button is pressed, Relay 2 should turn ON for the duration the button is pressed.
+Wiring:
+Connect one leg of the push button to a GPIO pin on the ESP32 (e.g., GPIO 13).
+Connect the other leg of the push button to GND.
+The relay module should be connected to another GPIO pin (e.g., GPIO 15).
+Code: When the button is pressed, Relay 2 should be ON; when released, it should turn OFF.
+3rd Feature: Limit Switch (Relay 3 & Relay 2 Control)
+Goal: When the limit switch is pressed, Relay 3 should turn ON for 3 seconds, and Relay 2 should turn ON for 4 seconds.
+Wiring:
+Connect one leg of the limit switch to a GPIO pin on the ESP32 (e.g., GPIO 16).
+Connect the other leg of the limit switch to GND.
+Connect Relay 3 to a GPIO pin (e.g., GPIO 17).
+Connect Relay 2 to another GPIO pin (e.g., GPIO 15).
+Code: When the limit switch is pressed, the code will activate Relay 3 for 3 seconds and Relay 2 for 4 seconds, then turn them both off.
+4th Feature: Second Limit Switch (Relay 3 Control)
+Goal: When the second limit switch is pressed, Relay 3 should turn ON for 1 second, then turn OFF.
+Wiring:
+Connect the second limit switch to a GPIO pin on the ESP32 (e.g., GPIO 18).
+Connect Relay 3 to the same GPIO pin as in the previous step (e.g., GPIO 17).
+Code: When the limit switch is pressed, Relay 3 should turn ON for 1 second and then turn OFF.
+Summary of Wiring:
+Toggle Switch (Relay 1):
+
+GPIO 12 → Toggle Switch → GND
+GPIO 14 → Relay 1
+Push Button (Relay 2):
+
+GPIO 13 → Push Button → GND
+GPIO 15 → Relay 2
+Limit Switch 1 (Relay 3 and Relay 2):
+
+GPIO 16 → Limit Switch 1 → GND
+GPIO 17 → Relay 3
+GPIO 15 → Relay 2 (same as for the push button)
+Limit Switch 2 (Relay 3):
+
+GPIO 18 → Limit Switch 2 → GND
+GPIO 17 → Relay 3 (same as for Limit Switch 1)
+
+
+#define TOGGLE_SWITCH_PIN 12    // Toggle Switch Pin
+#define BUTTON_PIN 13           // Push Button Pin
+#define LIMIT_SWITCH1_PIN 16    // Limit Switch 1 Pin
+#define LIMIT_SWITCH2_PIN 18    // Limit Switch 2 Pin
+#define RELAY1_PIN 14           // Relay 1 Pin
+#define RELAY2_PIN 15           // Relay 2 Pin
+#define RELAY3_PIN 17           // Relay 3 Pin
+
+void setup() {
+  pinMode(TOGGLE_SWITCH_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(LIMIT_SWITCH1_PIN, INPUT_PULLUP);
+  pinMode(LIMIT_SWITCH2_PIN, INPUT_PULLUP);
+  
+  pinMode(RELAY1_PIN, OUTPUT);
+  pinMode(RELAY2_PIN, OUTPUT);
+  pinMode(RELAY3_PIN, OUTPUT);
+
+  digitalWrite(RELAY1_PIN, LOW);
+  digitalWrite(RELAY2_PIN, LOW);
+  digitalWrite(RELAY3_PIN, LOW);
+}
+
+void loop() {
+  // Feature 1: Toggle Switch (Relay 1 Control)
+  if (digitalRead(TOGGLE_SWITCH_PIN) == LOW) {  // If switch is pressed
+    digitalWrite(RELAY1_PIN, HIGH);
+  } else {
+    digitalWrite(RELAY1_PIN, LOW);
+  }
+
+  // Feature 2: Push Button (Relay 2 Control)
+  if (digitalRead(BUTTON_PIN) == LOW) {  // If button is pressed
+    digitalWrite(RELAY2_PIN, HIGH);
+  } else {
+    digitalWrite(RELAY2_PIN, LOW);
+  }
+
+  // Feature 3: Limit Switch 1 (Relay 3 for 3 sec and Relay 2 for 4 sec)
+  if (digitalRead(LIMIT_SWITCH1_PIN) == LOW) {
+    digitalWrite(RELAY3_PIN, HIGH);
+    delay(3000);  // Relay 3 stays ON for 3 seconds
+    digitalWrite(RELAY3_PIN, LOW);
+
+    digitalWrite(RELAY2_PIN, HIGH);
+    delay(4000);  // Relay 2 stays ON for 4 seconds
+    digitalWrite(RELAY2_PIN, LOW);
+  }
+
+  // Feature 4: Limit Switch 2 (Relay 3 for 1 sec)
+  if (digitalRead(LIMIT_SWITCH2_PIN) == LOW) {
+    digitalWrite(RELAY3_PIN, HIGH);
+    delay(1000);  // Relay 3 stays ON for 1 second
+    digitalWrite(RELAY3_PIN, LOW);
+  }
+}
