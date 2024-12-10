@@ -49,7 +49,7 @@ const int EEPROM_ADDR_R3_TIME = 8;  // Different EEPROM address for Set R2
 const int A2_PIN = A2;              // Pin A2 for controlling an external device
 // Menu items in the main menu
 char* menuItems[2] = { "1: Settings" };  // Add Settings option
-char* settingItems[4] = { "PUMP Close Time", "PUMP Delay Time", "PUMP Open Time", "Back" };
+char* settingItems[4] = { "Press. C Time", "Delay Time", "Press. O Time", "Back" };
 int currentSettingSelection = 0;
 bool isCycleRunning = false;  // Flag to track if the cycle is running
 const int D0_PIN = 0;         // Pin D0 to detect the short circuit
@@ -344,7 +344,7 @@ void handleStartMode() {
 
     // Display R1 ON status and Delay Time text
     lcd.clear();
-    lcd.print("R1 ON R2 OFF ");
+    lcd.print("Pressure Close ");
     lcd.setCursor(13, 0);
     lcd.print(setR1Time, 1);
     lcd.setCursor(0, 1);
@@ -370,7 +370,7 @@ void handleStartMode() {
 
       // Display R1 OFF, delay countdown
       lcd.clear();
-      lcd.print("R1 OFF R2 OFF");
+      lcd.print("Complete OFF");
       lcd.setCursor(0, 1);
       lcd.print("Delay Time     ");
       lcd.setCursor(13, 1);
@@ -396,7 +396,7 @@ void handleStartMode() {
 
       // Display R2 ON status
       lcd.clear();
-      lcd.print("R1 OFF R2 ON  ");
+      lcd.print("Pressure ON");
       lcd.setCursor(13, 0);
       lcd.print(setR3Time, 1);  // Show Relay 2 time (same as R1)
     }
@@ -420,7 +420,7 @@ void handleStartMode() {
 
       // Display final OFF status for both relays
       lcd.clear();
-      lcd.print("R1 OFF R2 OFF ");
+      lcd.print("Complete OFF");
       delay(1000);  // Optional: brief delay to show final status
     }
   }
@@ -446,7 +446,7 @@ void handleStartMode() {
 
     // Display R1 ON status and Delay Time text
     lcd.clear();
-    lcd.print("R1 ON R2 OFF ");
+    lcd.print("Pressure ON");
     lcd.setCursor(13, 0);
     lcd.print(setR1Time, 1);
     lcd.setCursor(0, 1);
@@ -478,7 +478,7 @@ void handleStartMode() {
 
     // Display R1 ON status and Delay Time text
     lcd.clear();
-    lcd.print("R1 ON R2 OFF ");
+    lcd.print("Pressure ON");
     lcd.setCursor(13, 0);
     lcd.print(setR1Time, 1);
     lcd.setCursor(0, 1);
@@ -507,7 +507,7 @@ void displaySettingsMenu() {
 // Display the R1 time setting screen
 void displaySetR1() {
   lcd.clear();
-  lcd.print("Set Pump Close Time:");
+  lcd.print("Set Press. C Time:");
   lcd.setCursor(0, 1);
   lcd.print(setR1Time, 1);
   lcd.print(" sec");
@@ -536,7 +536,7 @@ void handleSetR1(int buttonValue) {
 
 void displaySetR2() {
   lcd.clear();
-  lcd.print("Pump Delay Time:");
+  lcd.print("Delay Time:");
   lcd.setCursor(0, 1);
   lcd.print(setDelayTime, 1);  // Display time with one decimal place
   lcd.print(" sec");
@@ -566,7 +566,7 @@ void handleDelayR2(int buttonValue) {
 
 void displaySetR3() {
   lcd.clear();
-  lcd.print("Pump Open Time:");
+  lcd.print("Press. O Time:");
   lcd.setCursor(0, 1);
   // lcd.print(setR3time, 1);  // Display time with one decimal place
   lcd.print(setR3Time, 1);  // Display time with one decimal place
