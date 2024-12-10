@@ -102,3 +102,18 @@ void loop() {
     digitalWrite(RELAY3_PIN, LOW);
   }
 }
+
+hi am using arduino nano 
+
+i need feature like this when 
+
+1. when one push button pressed then relay 1 on when release relay 1 off
+
+2. when second  push button pressed relay 2 on when release relay 2 off 
+
+3. when third push button just pressed and instantly released then relay 2 on for 10 sec and relay 3 on for 3 sec again when he pressed then again same cycle 
+
+4. when fourth push button just pressed and released instantly then relay 3 on for 3 sec after it off 
+
+all work independently push buttons use safety features accto you give wiring also and code 
+note every action performed when button pressed not on power o
