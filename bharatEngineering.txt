@@ -1,199 +1,67 @@
-1st Feature: Toggle Switch (Relay 1 Control)
-Goal: When the toggle switch is pressed, Relay 1 should turn ON. When released, Relay 1 should turn OFF.
-Wiring:
-Connect one leg of the toggle switch to a GPIO pin on the ESP32 (e.g., GPIO 12).
-Connect the other leg of the toggle switch to GND.
-The relay module should be connected to another GPIO pin (e.g., GPIO 14).
-Code: Use a simple digitalRead() function to check if the toggle switch is pressed and control Relay 1 accordingly.
-2nd Feature: Push Button (Relay 2 Control)
-Goal: When the push button is pressed, Relay 2 should turn ON for the duration the button is pressed.
-Wiring:
-Connect one leg of the push button to a GPIO pin on the ESP32 (e.g., GPIO 13).
-Connect the other leg of the push button to GND.
-The relay module should be connected to another GPIO pin (e.g., GPIO 15).
-Code: When the button is pressed, Relay 2 should be ON; when released, it should turn OFF.
-3rd Feature: Limit Switch (Relay 3 & Relay 2 Control)
-Goal: When the limit switch is pressed, Relay 3 should turn ON for 3 seconds, and Relay 2 should turn ON for 4 seconds.
-Wiring:
-Connect one leg of the limit switch to a GPIO pin on the ESP32 (e.g., GPIO 16).
-Connect the other leg of the limit switch to GND.
-Connect Relay 3 to a GPIO pin (e.g., GPIO 17).
-Connect Relay 2 to another GPIO pin (e.g., GPIO 15).
-Code: When the limit switch is pressed, the code will activate Relay 3 for 3 seconds and Relay 2 for 4 seconds, then turn them both off.
-4th Feature: Second Limit Switch (Relay 3 Control)
-Goal: When the second limit switch is pressed, Relay 3 should turn ON for 1 second, then turn OFF.
-Wiring:
-Connect the second limit switch to a GPIO pin on the ESP32 (e.g., GPIO 18).
-Connect Relay 3 to the same GPIO pin as in the previous step (e.g., GPIO 17).
-Code: When the limit switch is pressed, Relay 3 should turn ON for 1 second and then turn OFF.
-Summary of Wiring:
-Toggle Switch (Relay 1):
+# Arduino-Based PLC for Harrow Project
 
-GPIO 12 → Toggle Switch → GND
-GPIO 14 → Relay 1
-Push Button (Relay 2):
+This project uses an **Arduino Nano** as a **Programmable Logic Controller (PLC)** to automate the control of relays for various components in a **harrow system**. The goal is to create a custom and reliable solution for controlling different devices and features with push buttons.
 
-GPIO 13 → Push Button → GND
-GPIO 15 → Relay 2
-Limit Switch 1 (Relay 3 and Relay 2):
+## Features
 
-GPIO 16 → Limit Switch 1 → GND
-GPIO 17 → Relay 3
-GPIO 15 → Relay 2 (same as for the push button)
-Limit Switch 2 (Relay 3):
+1. **Relay Control with Push Buttons:**
+   - When **Button 1** is pressed, **Relay 1** is activated, and it turns off when the button is released.
+   - When **Button 2** is pressed, **Relay 2** is activated, and it turns off when the button is released.
 
-GPIO 18 → Limit Switch 2 → GND
-GPIO 17 → Relay 3 (same as for Limit Switch 1)
+2. **Timed Relay Activation:**
+   - When **Button 3** is pressed and released, **Relay 2** turns on for 10 seconds, and **Relay 3** turns on for 3 seconds. This cycle repeats each time the button is pressed.
+   
+3. **Timed Relay for Safety Feature:**
+   - When **Button 4** is pressed and released, **Relay 3** turns on for 3 seconds to ensure safe operation.
 
+## Purpose of the Project
 
-#define TOGGLE_SWITCH_PIN 12    // Toggle Switch Pin
-#define BUTTON_PIN 13           // Push Button Pin
-#define LIMIT_SWITCH1_PIN 16    // Limit Switch 1 Pin
-#define LIMIT_SWITCH2_PIN 18    // Limit Switch 2 Pin
-#define RELAY1_PIN 14           // Relay 1 Pin
-#define RELAY2_PIN 15           // Relay 2 Pin
-#define RELAY3_PIN 17           // Relay 3 Pin
+This Arduino-based PLC aims to replace traditional PLC systems with a more cost-effective solution, leveraging the power of Arduino to control devices like relays, actuators, or sensors in a **harrow system** (or similar machinery).
 
-void setup() {
-  pinMode(TOGGLE_SWITCH_PIN, INPUT_PULLUP);
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
-  pinMode(LIMIT_SWITCH1_PIN, INPUT_PULLUP);
-  pinMode(LIMIT_SWITCH2_PIN, INPUT_PULLUP);
-  
-  pinMode(RELAY1_PIN, OUTPUT);
-  pinMode(RELAY2_PIN, OUTPUT);
-  pinMode(RELAY3_PIN, OUTPUT);
+The project is designed to be flexible and adaptable, allowing users to easily modify the relay logic, timing, and inputs to suit their needs.
 
-  digitalWrite(RELAY1_PIN, LOW);
-  digitalWrite(RELAY2_PIN, LOW);
-  digitalWrite(RELAY3_PIN, LOW);
-}
+## Components Used
 
-void loop() {
-  // Feature 1: Toggle Switch (Relay 1 Control)
-  if (digitalRead(TOGGLE_SWITCH_PIN) == LOW) {  // If switch is pressed
-    digitalWrite(RELAY1_PIN, HIGH);
-  } else {
-    digitalWrite(RELAY1_PIN, LOW);
-  }
+- **Arduino Nano** (Main controller)
+- **4 Push Buttons** (For user input)
+- **3 Relay Modules** (For controlling external devices like motors, sensors, or actuators)
+- **10kΩ Resistors** (For pull-down resistors on push buttons)
+- **Jumper Wires** (For connecting components)
+- **Power Supply** (For the Arduino and relays)
 
-  // Feature 2: Push Button (Relay 2 Control)
-  if (digitalRead(BUTTON_PIN) == LOW) {  // If button is pressed
-    digitalWrite(RELAY2_PIN, HIGH);
-  } else {
-    digitalWrite(RELAY2_PIN, LOW);
-  }
+## Wiring Diagram
 
-  // Feature 3: Limit Switch 1 (Relay 3 for 3 sec and Relay 2 for 4 sec)
-  if (digitalRead(LIMIT_SWITCH1_PIN) == LOW) {
-    digitalWrite(RELAY3_PIN, HIGH);
-    delay(3000);  // Relay 3 stays ON for 3 seconds
-    digitalWrite(RELAY3_PIN, LOW);
+1. **Button 1:** Connect to Arduino Pin D2
+2. **Button 2:** Connect to Arduino Pin D3
+3. **Button 3:** Connect to Arduino Pin D4
+4. **Button 4:** Connect to Arduino Pin D5
+5. **Relay 1:** Connect to Arduino Pin D6
+6. **Relay 2:** Connect to Arduino Pin D7
+7. **Relay 3:** Connect to Arduino Pin D8
 
-    digitalWrite(RELAY2_PIN, HIGH);
-    delay(4000);  // Relay 2 stays ON for 4 seconds
-    digitalWrite(RELAY2_PIN, LOW);
-  }
+**Note:** Each button is connected to GND and uses the `INPUT_PULLUP` mode to simplify wiring (no external resistors required). The relay modules are connected to the Arduino's 5V and GND pins for power.
 
-  // Feature 4: Limit Switch 2 (Relay 3 for 1 sec)
-  if (digitalRead(LIMIT_SWITCH2_PIN) == LOW) {
-    digitalWrite(RELAY3_PIN, HIGH);
-    delay(1000);  // Relay 3 stays ON for 1 second
-    digitalWrite(RELAY3_PIN, LOW);
-  }
-}
+## Code Description
 
-hi am using arduino nano 
+Key Functions:
+Button Handling: Each button controls one or more relays. The logic uses the internal pull-up resistor of the Arduino, so pressing a button connects the pin to GND, registering a LOW state.
+Relay Control: Relays are turned ON or OFF based on button states or timed actions. Each relay has a dedicated pin on the Arduino to control its state.
+Timed Actions: Buttons 3 and 4 trigger timed actions where specific relays are activated for a defined period (10 seconds for Relay 2 and 3 seconds for Relay 3).
+Installation Instructions
+Hardware Setup:
+Connect the components as described in the Wiring Diagram section.
+Ensure that the relays are connected to an appropriate external power supply if needed for the devices you're controlling.
+Upload the provided Arduino code to the Arduino Nano using the Arduino IDE.
+Software Setup:
+Open the Arduino IDE and create a new sketch.
+Copy and paste the code provided above into the sketch.
+Select the correct board and port from the Tools menu.
+Upload the code to your Arduino Nano.
+Applications
+This project can be used for various automation systems where you need to control multiple devices with simple push button interfaces, such as:
 
-i need feature like this when 
-
-1. when one push button pressed then relay 1 on when release relay 1 off
-
-2. when second  push button pressed relay 2 on when release relay 2 off 
-
-3. when third push button just pressed and instantly released then relay 2 on for 10 sec and relay 3 on for 3 sec again when he pressed then again same cycle 
-
-4. when fourth push button just pressed and released instantly then relay 3 on for 3 sec after it off 
-
-all work independently push buttons use safety features accto you give wiring also and code 
-note every action performed when button pressed not on power o
-
-
-// Define pin numbers for buttons and relays
-const int button1Pin = 2;
-const int button2Pin = 3;
-const int button3Pin = 4;
-const int button4Pin = 5;
-
-const int relay1Pin = 6;
-const int relay2Pin = 7;
-const int relay3Pin = 8;
-
-// Variables to track button states
-int button1State = 0;
-int button2State = 0;
-int button3State = 0;
-int button4State = 0;
-
-unsigned long button3Timer = 0;
-unsigned long button4Timer = 0;
-
-void setup() {
-  // Set button pins as inputs with internal pull-up resistors
-  pinMode(button1Pin, INPUT_PULLUP);
-  pinMode(button2Pin, INPUT_PULLUP);
-  pinMode(button3Pin, INPUT_PULLUP);
-  pinMode(button4Pin, INPUT_PULLUP);
-
-  // Set relay pins as outputs
-  pinMode(relay1Pin, OUTPUT);
-  pinMode(relay2Pin, OUTPUT);
-  pinMode(relay3Pin, OUTPUT);
-
-  // Initially turn off all relays
-  digitalWrite(relay1Pin, LOW);
-  digitalWrite(relay2Pin, LOW);
-  digitalWrite(relay3Pin, LOW);
-}
-
-void loop() {
-  // Read the button states (buttons are active LOW, so the logic is inverted)
-  button1State = digitalRead(button1Pin) == LOW;
-  button2State = digitalRead(button2Pin) == LOW;
-  button3State = digitalRead(button3Pin) == LOW;
-  button4State = digitalRead(button4Pin) == LOW;
-
-  // Button 1: Turn relay 1 on when pressed, off when released
-  if (button1State) {
-    digitalWrite(relay1Pin, HIGH);
-  } else {
-    digitalWrite(relay1Pin, LOW);
-  }
-
-  // Button 2: Turn relay 2 on when pressed, off when released
-  if (button2State) {
-    digitalWrite(relay2Pin, HIGH);
-  } else {
-    digitalWrite(relay2Pin, LOW);
-  }
-
-  // Button 3: When pressed and released, activate relays 2 for 10s, 3 for 3s
-  if (button3State && (millis() - button3Timer > 200)) {  // debounce and detect press
-    button3Timer = millis();  // record the press time
-    digitalWrite(relay2Pin, HIGH);
-    delay(10000);  // 10 seconds
-    digitalWrite(relay3Pin, HIGH);
-    delay(3000);  // 3 seconds
-    digitalWrite(relay2Pin, LOW);
-    digitalWrite(relay3Pin, LOW);
-  }
-
-  // Button 4: When pressed and released, activate relay 3 for 3 seconds
-  if (button4State && (millis() - button4Timer > 200)) {  // debounce and detect press
-    button4Timer = millis();  // record the press time
-    digitalWrite(relay3Pin, HIGH);
-    delay(3000);  // 3 seconds
-    digitalWrite(relay3Pin, LOW);
-  }
-}
-
+Agricultural equipment (like a harrow or other machinery)
+Home automation systems
+Industrial control systems
+Conclusion
+This Arduino-based PLC solution is a flexible, cost-effective approach to controlling relays for various applications. It provides an excellent learning experience for anyone interested in automation systems and microcontroller programming.
