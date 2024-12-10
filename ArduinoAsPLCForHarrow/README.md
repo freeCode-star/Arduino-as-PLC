@@ -43,25 +43,43 @@ The project is designed to be flexible and adaptable, allowing users to easily m
 
 ## Code Description
 
-Key Functions:
-Button Handling: Each button controls one or more relays. The logic uses the internal pull-up resistor of the Arduino, so pressing a button connects the pin to GND, registering a LOW state.
-Relay Control: Relays are turned ON or OFF based on button states or timed actions. Each relay has a dedicated pin on the Arduino to control its state.
-Timed Actions: Buttons 3 and 4 trigger timed actions where specific relays are activated for a defined period (10 seconds for Relay 2 and 3 seconds for Relay 3).
-Installation Instructions
-Hardware Setup:
+##Key Functions:
+
+**Button Handling:** Each button controls one or more relays. The logic uses the internal pull-up resistor of the Arduino, so pressing a button connects the pin to GND, registering a LOW state.
+
+**Relay Control:** Relays are turned ON or OFF based on button states or timed actions. Each relay has a dedicated pin on the Arduino to control its state.
+
+**Timed Actions:** Buttons 3 and 4 trigger timed actions where specific relays are activated for a defined period (10 seconds for Relay 2 and 3 seconds for Relay 3).
+
+# Installation Instructions
+
+## Hardware Setup:
+
 Connect the components as described in the Wiring Diagram section.
+
 Ensure that the relays are connected to an appropriate external power supply if needed for the devices you're controlling.
+
 Upload the provided Arduino code to the Arduino Nano using the Arduino IDE.
-Software Setup:
+
+# Software Setup:
+
 Open the Arduino IDE and create a new sketch.
+
 Copy and paste the code provided above into the sketch.
+
 Select the correct board and port from the Tools menu.
-Upload the code to your Arduino Nano.
-Applications
+
+** Upload the code to your Arduino Nano. **
+##Applications
+
 This project can be used for various automation systems where you need to control multiple devices with simple push button interfaces, such as:
 
 Agricultural equipment (like a harrow or other machinery)
+
 Home automation systems
+
 Industrial control systems
-Conclusion
+
+# Conclusion
+
 This Arduino-based PLC solution is a flexible, cost-effective approach to controlling relays for various applications. It provides an excellent learning experience for anyone interested in automation systems and microcontroller programming.
