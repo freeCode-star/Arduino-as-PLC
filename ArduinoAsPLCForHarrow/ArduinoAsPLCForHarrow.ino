@@ -14,8 +14,13 @@ int button2State = 0;
 int button3State = 0;
 int button4State = 0;
 
-unsigned long button3Timer = 0;
-unsigned long button4Timer = 0;
+// Timers for button presses
+unsigned long button3PressTime = 0;
+unsigned long button3Relay2Time = 0;
+unsigned long button3Relay3Time = 0;
+
+bool relay2Active = false;
+bool relay3Active = false;
 
 void setup() {
   // Set button pins as inputs with internal pull-up resistors
@@ -56,20 +61,45 @@ void loop() {
     digitalWrite(relay2Pin, LOW);
   }
 
-  // Button 3: When pressed and released, activate relays 2 for 10s, 3 for 3s
-  if (button3State && (millis() - button3Timer > 200)) {  // debounce and detect press
-    button3Timer = millis();  // record the press time
-    digitalWrite(relay2Pin, HIGH);
-    delay(10000);  // 10 seconds
-    digitalWrite(relay3Pin, HIGH);
-    delay(3000);  // 3 seconds
+  // Button 3: When pressed, activate relay 2 for 10s, relay 3 for 3s (non-blocking)
+  if (button3State) {
+    if (button3PressTime == 0) {
+      // Start timing when the button is first pressed
+      button3PressTime = millis();
+      digitalWrite(relay2Pin, HIGH);  // Turn on relay 2 immediately
+      relay2Active = true;
+      button3Relay2Time = millis();  // Start timer for relay 2
+    }
+
+    // If relay 2 has been on for 10 seconds, turn it off
+    if (relay2Active && millis() - button3Relay2Time >= 10000) {
+      digitalWrite(relay2Pin, LOW);
+      relay2Active = false;  // Stop relay 2
+    }
+
+    // Start relay 3 after 3 seconds and turn it off after 3 seconds
+    if (millis() - button3PressTime >= 3000 && !relay3Active) {
+      digitalWrite(relay3Pin, HIGH);
+      relay3Active = true;  // Relay 3 is active
+      button3Relay3Time = millis();  // Start timer for relay 3
+    }
+
+    // Turn off relay 3 after 3 seconds
+    if (relay3Active && millis() - button3Relay3Time >= 3000) {
+      digitalWrite(relay3Pin, LOW);
+      relay3Active = false;  // Stop relay 3
+    }
+  } else {
+    // Reset if button 3 is not pressed
+    button3PressTime = 0;
+    relay2Active = false;
+    relay3Active = false;
     digitalWrite(relay2Pin, LOW);
     digitalWrite(relay3Pin, LOW);
   }
 
-  // Button 4: When pressed and released, activate relay 3 for 3 seconds
-  if (button4State && (millis() - button4Timer > 200)) {  // debounce and detect press
-    button4Timer = millis();  // record the press time
+  // Button 4: When pressed, activate relay 3 for 3 seconds
+  if (button4State) {
     digitalWrite(relay3Pin, HIGH);
     delay(3000);  // 3 seconds
     digitalWrite(relay3Pin, LOW);
