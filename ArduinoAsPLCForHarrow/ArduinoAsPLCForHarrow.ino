@@ -1,106 +1,106 @@
-const int selector1Pin = 2;   // Pin where Button 1 is connected
-const int selector2Pin = 3;  // Pin where Button 3 is connected (new button)
-const int manualMotorOnPin = 4;  // Pin where Button 2 is connected
-const int hydraulicButtonPin = 5;  // Pin where Button 4 is connected (new button)
-const int hydraulicRelayPin = 6;   // Pin where Relay 4 is connected (new relay)
-const int motorRelayPin = 7;   // Pin where Relay 1 is connected
-const int buzzerRelayPin = 8;   // Pin where Relay 3 is connected
+const int selector1Pin = 2;   // Pin where Selector 1 is connected
+const int selector2Pin = 3;  // Pin where Selector 2 is connected (new button)
+const int manualMotorOnPin = 4;  // Pin where Manual Motor Button is connected
+const int hydraulicButtonPin = 5;  // Pin where Hydraulic On Button is connected (new button)
+const int hydraulicRelayPin = 6;   // Pin where Hydraulic Relay is connected (new relay)
+const int motorRelayPin = 7;   // Pin where Motor Relay is connected
+const int buzzerRelayPin = 8;   // Pin where Buzzer Relay is connected
 
-unsigned long motorOnTime = 0;   // Time when Relay 1 was turned on
-unsigned long buzzerOnTime = 0;   // Time when Relay 3 was turned on
-unsigned long motorDuration = 10000;  // Relay 1 on for 10 seconds
-unsigned long buzzerDuration = 3000;   // Relay 3 on for 3 seconds
-unsigned long relay1ShortDuration = 3000;  // Relay 1 for 3 seconds (new logic)
+unsigned long motorOnTime = 0;   // Time when Motor Relay was turned on
+unsigned long buzzerOnTime = 0;   // Time when Buzzer Relay was turned on
+unsigned long motorDuration = 10000;  // Motor Relay on for 10 seconds
+unsigned long buzzerDuration = 3000;   // Buzzer Relay on for 3 seconds
+unsigned long relay1ShortDuration = 3000;  // Motor Relay for 3 seconds (new logic)
 
-bool motorState = false;   // To track the state of Relay 1
-bool buzzerState = false;   // To track the state of Relay 3
-bool buzzerOnState = false; // To track Relay 1's short state
-bool relay4State = false;   // To track the state of Relay 4
+bool motorState = false;   // To track the state of Motor Relay
+bool buzzerState = false;   // To track the state of Buzzer Relay
+bool buzzerOnState = false; // To track Motor Relay's short state
+bool relay4State = false;   // To track the state of Hydraulic Relay
 
-bool lastselector1State = LOW;  // Previous state of Button 1
-bool selector1State = LOW;      // Current state of Button 1
-bool manualMotorOn = LOW;     // Current state of Button 2
-bool selector2State = LOW;     // Current state of Button 3
-bool hydraulicState = LOW;     // Current state of Button 4
+bool lastselector1State = LOW;  // Previous state of Selector 1
+bool selector1State = LOW;      // Current state of Selector 1
+bool manualMotorOn = LOW;     // Current state of Manual Motor Button
+bool selector2State = LOW;     // Current state of Selector 2
+bool hydraulicState = LOW;     // Current state of Hydraulic On Button
 
 void setup() {
-  pinMode(selector1Pin, INPUT_PULLUP);  // Set Button 1 pin as input with pull-up resistor
-  pinMode(manualMotorOnPin, INPUT_PULLUP);  // Set Button 2 pin as input with pull-up resistor
-  pinMode(selector2Pin, INPUT_PULLUP);  // Set Button 3 pin as input with pull-up resistor
-  pinMode(hydraulicButtonPin, INPUT_PULLUP);  // Set Button 4 pin as input with pull-up resistor
+  pinMode(selector1Pin, INPUT_PULLUP);  // Set Selector 1 pin as input with pull-up resistor
+  pinMode(manualMotorOnPin, INPUT_PULLUP);  // Set Manual Motor Button pin as input with pull-up resistor
+  pinMode(selector2Pin, INPUT_PULLUP);  // Set Selector 2 pin as input with pull-up resistor
+  pinMode(hydraulicButtonPin, INPUT_PULLUP);  // Set Hydraulic On Button pin as input with pull-up resistor
 
-  pinMode(motorRelayPin, OUTPUT);        // Set Relay 1 pin as output
-  pinMode(buzzerRelayPin, OUTPUT);        // Set Relay 3 pin as output
-  pinMode(hydraulicRelayPin, OUTPUT);        // Set Relay 4 pin as output
-  digitalWrite(motorRelayPin, HIGH);      // Ensure Relay 1 is off initially
-  digitalWrite(buzzerRelayPin, HIGH);      // Ensure Relay 3 is off initially
-  digitalWrite(hydraulicRelayPin, HIGH);      // Ensure Relay 4 is off initially
+  pinMode(motorRelayPin, OUTPUT);        // Set Motor Relay pin as output
+  pinMode(buzzerRelayPin, OUTPUT);        // Set Buzzer Relay pin as output
+  pinMode(hydraulicRelayPin, OUTPUT);        // Set Hydraulic Relay pin as output
+  digitalWrite(motorRelayPin, HIGH);      // Ensure Motor Relay is off initially
+  digitalWrite(buzzerRelayPin, HIGH);      // Ensure Buzzer Relay is off initially
+  digitalWrite(hydraulicRelayPin, HIGH);      // Ensure Hydraulic Relay is off initially
 }
 
 void loop() {
   // Read the current button states
-  selector1State = digitalRead(selector1Pin);  // Button 1 state
-  manualMotorOn = digitalRead(manualMotorOnPin);  // Button 2 state
-  selector2State = digitalRead(selector2Pin);  // Button 3 state
-  hydraulicState = digitalRead(hydraulicButtonPin);  // Button 4 state
+  selector1State = digitalRead(selector1Pin);  // Selector 1 state
+  manualMotorOn = digitalRead(manualMotorOnPin);  // Manual Motor Button state
+  selector2State = digitalRead(selector2Pin);  // Selector 2 state
+  hydraulicState = digitalRead(hydraulicButtonPin);  // Hydraulic On Button state
 
-  // Button 1 pressed: turn both relays on for specified durations
+  // Selector 1 pressed: turn both relays on for specified durations
   if (selector1State == LOW && lastselector1State == HIGH) {
-    // Button 1 was pressed, turn on both relays
+    // Selector 1 was pressed, turn on both relays
     motorState = true;
     buzzerState = true;
-    motorOnTime = millis();  // Store the time when Relay 1 was turned on
-    buzzerOnTime = millis();  // Store the time when Relay 3 was turned on
-    digitalWrite(motorRelayPin, LOW);  // Turn Relay 1 on
-    digitalWrite(buzzerRelayPin, LOW);  // Turn Relay 3 on
+    motorOnTime = millis();  // Store the time when Motor Relay was turned on
+    buzzerOnTime = millis();  // Store the time when Buzzer Relay was turned on
+    digitalWrite(motorRelayPin, LOW);  // Turn Motor Relay on
+    digitalWrite(buzzerRelayPin, LOW);  // Turn Buzzer Relay on
   }
 
-  // Check if Relay 1 has been on for 10 seconds
+  // Check if Motor Relay has been on for 10 seconds
   if (motorState && (millis() - motorOnTime >= motorDuration)) {
-    digitalWrite(motorRelayPin, HIGH);  // Turn Relay 1 off
-    motorState = false;  // Reset Relay 1 state
+    digitalWrite(motorRelayPin, HIGH);  // Turn Motor Relay off
+    motorState = false;  // Reset Motor Relay state
   }
 
-  // Check if Relay 3 has been on for 3 seconds (from Button 1)
+  // Check if Buzzer Relay has been on for 3 seconds (from Selector 1)
   if (buzzerState && (millis() - buzzerOnTime >= buzzerDuration)) {
-    digitalWrite(buzzerRelayPin, HIGH);  // Turn Relay 3 off
-    buzzerState = false;  // Reset Relay 3 state
+    digitalWrite(buzzerRelayPin, HIGH);  // Turn Buzzer Relay off
+    buzzerState = false;  // Reset Buzzer Relay state
   }
 
-  // Button 2 pressed: control Relay 3 independently
+  // Manual Motor Button pressed: control Buzzer Relay independently
   if (manualMotorOn == LOW) {
-    digitalWrite(motorRelayPin, LOW);  // Keep Relay 3 on while Button 2 is pressed
+    digitalWrite(motorRelayPin, LOW);  // Keep Buzzer Relay on while Manual Motor Button is pressed
   } else {
-    // Only turn off Relay 3 when Button 2 is released
+    // Only turn off Buzzer Relay when Manual Motor Button is released
     if (millis() - motorOnTime >= motorDuration) {
-      digitalWrite(motorRelayPin, HIGH);   // Turn Relay 3 off when Button 2 is not pressed
+      digitalWrite(motorRelayPin, HIGH);   // Turn Buzzer Relay off when Manual Motor Button is not pressed
     }
   }
 
-  // Button 3 pressed: turn Relay 1 on for 3 seconds
+  // Selector 2 pressed: turn Motor Relay on for 3 seconds
   if (selector2State == LOW && buzzerOnState == false) {
-    // Button 3 was pressed, turn Relay 1 on for 3 seconds
-    buzzerOnState = true;   // Set short duration state for Relay 1
-    digitalWrite(buzzerRelayPin, LOW);  // Turn Relay 1 on
+    // Selector 2 was pressed, turn Motor Relay on for 3 seconds
+    buzzerOnState = true;   // Set short duration state for Motor Relay
+    digitalWrite(buzzerRelayPin, LOW);  // Turn Motor Relay on
     motorOnTime = millis();  // Start the timer for 3 seconds
   }
 
-  // Check if Relay 1 has been on for 3 seconds (from Button 3)
+  // Check if Motor Relay has been on for 3 seconds (from Selector 2)
   if (buzzerOnState && (millis() - motorOnTime >= relay1ShortDuration)) {
-    digitalWrite(buzzerRelayPin, HIGH);  // Turn Relay 1 off after 3 seconds
-    buzzerOnState = false;  // Reset Relay 1 short state
+    digitalWrite(buzzerRelayPin, HIGH);  // Turn Motor Relay off after 3 seconds
+    buzzerOnState = false;  // Reset Motor Relay short state
   }
 
-  // Button 4 pressed: control Relay 4 (new button)
+  // Hydraulic On Button pressed: control Hydraulic Relay (new button)
   if (hydraulicState == LOW) {
-    // Button 4 is pressed, turn Relay 4 on
-    digitalWrite(hydraulicRelayPin, LOW);  // Turn Relay 4 on
+    // Hydraulic On Button is pressed, turn Hydraulic Relay on
+    digitalWrite(hydraulicRelayPin, LOW);  // Turn Hydraulic Relay on
   } else {
-    // Button 4 is released, turn Relay 4 off
-    digitalWrite(hydraulicRelayPin, HIGH);   // Turn Relay 4 off
+    // Hydraulic On Button is released, turn Hydraulic Relay off
+    digitalWrite(hydraulicRelayPin, HIGH);   // Turn Hydraulic Relay off
   }
 
-  // Update the last button state for Button 1
+  // Update the last button state for Selector 1
   lastselector1State = selector1State;
 }
                        
