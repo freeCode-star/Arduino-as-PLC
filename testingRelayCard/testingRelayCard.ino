@@ -29,32 +29,65 @@ void setup() {
 
   lcd.init();                      // Initialize the LCD
   lcd.backlight();                 // Turn on the LCD backlight
-  
-  // Load the motor, buzzer, hydra, price per hour, and gain factor from EEPROM
-  motorDurationArray[0] = EEPROM.read(0);
-  motorDurationArray[1] = EEPROM.read(1);
-  motorDurationArray[2] = EEPROM.read(2);
-  motorDurationArray[3] = EEPROM.read(3);
 
-  buzzerDurationArray[0] = EEPROM.read(4);
-  buzzerDurationArray[1] = EEPROM.read(5);
-  buzzerDurationArray[2] = EEPROM.read(6);
-  buzzerDurationArray[3] = EEPROM.read(7);
+  // Initialize all EEPROM values to default (0000) if not set
+  bool eepromInitialized = true;
+  for (int i = 0; i < 20; i++) {
+    if (EEPROM.read(i) != 0) {
+      eepromInitialized = false;  // If any EEPROM value is not 0, it means the EEPROM is already initialized
+      break;
+    }
+  }
 
-  hydraDurationArray[0] = EEPROM.read(8);
-  hydraDurationArray[1] = EEPROM.read(9);
-  hydraDurationArray[2] = EEPROM.read(10);
-  hydraDurationArray[3] = EEPROM.read(11);
+  // If EEPROM is not initialized, set default values (0000) for all settings
+  if (!eepromInitialized) {
+    for (int i = 0; i < 4; i++) {
+      motorDurationArray[i] = 0;  // Default to 0000
+      EEPROM.write(i, 0);  // Save default values to EEPROM
+    }
+    for (int i = 4; i < 8; i++) {
+      buzzerDurationArray[i - 4] = 0;  // Default to 0000
+      EEPROM.write(i, 0);  // Save default values to EEPROM
+    }
+    for (int i = 8; i < 12; i++) {
+      hydraDurationArray[i - 8] = 0;  // Default to 0000
+      EEPROM.write(i, 0);  // Save default values to EEPROM
+    }
+    for (int i = 12; i < 16; i++) {
+      pricePerHourArray[i - 12] = 0;  // Default to 0000
+      EEPROM.write(i, 0);  // Save default values to EEPROM
+    }
+    for (int i = 16; i < 20; i++) {
+      gainFactorArray[i - 16] = 0;  // Default to 0000
+      EEPROM.write(i, 0);  // Save default values to EEPROM
+    }
+  } else {
+    // Load settings from EEPROM if they are already set
+    motorDurationArray[0] = EEPROM.read(0);
+    motorDurationArray[1] = EEPROM.read(1);
+    motorDurationArray[2] = EEPROM.read(2);
+    motorDurationArray[3] = EEPROM.read(3);
 
-  pricePerHourArray[0] = EEPROM.read(12);
-  pricePerHourArray[1] = EEPROM.read(13);
-  pricePerHourArray[2] = EEPROM.read(14);
-  pricePerHourArray[3] = EEPROM.read(15);
+    buzzerDurationArray[0] = EEPROM.read(4);
+    buzzerDurationArray[1] = EEPROM.read(5);
+    buzzerDurationArray[2] = EEPROM.read(6);
+    buzzerDurationArray[3] = EEPROM.read(7);
 
-  gainFactorArray[0] = EEPROM.read(16);
-  gainFactorArray[1] = EEPROM.read(17);
-  gainFactorArray[2] = EEPROM.read(18);
-  gainFactorArray[3] = EEPROM.read(19);
+    hydraDurationArray[0] = EEPROM.read(8);
+    hydraDurationArray[1] = EEPROM.read(9);
+    hydraDurationArray[2] = EEPROM.read(10);
+    hydraDurationArray[3] = EEPROM.read(11);
+
+    pricePerHourArray[0] = EEPROM.read(12);
+    pricePerHourArray[1] = EEPROM.read(13);
+    pricePerHourArray[2] = EEPROM.read(14);
+    pricePerHourArray[3] = EEPROM.read(15);
+
+    gainFactorArray[0] = EEPROM.read(16);
+    gainFactorArray[1] = EEPROM.read(17);
+    gainFactorArray[2] = EEPROM.read(18);
+    gainFactorArray[3] = EEPROM.read(19);
+  }
 
   // Display "Hi" initially
   lcd.setCursor(0, 0);
