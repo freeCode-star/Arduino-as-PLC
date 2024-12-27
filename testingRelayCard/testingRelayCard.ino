@@ -19,7 +19,6 @@ const long blinkInterval = 500;  // Interval for blinking (in milliseconds)
 
 bool inSettingsMode = false;  // Flag to track whether we're in settings mode
 bool blinkState = false;  // State for blinking
-bool settingMotorDuration = true;  // Flag to track if we are in motor duration setting mode
 bool dashboardMode = true;  // Track if we're in the dashboard mode
 int settingIndex = 0;  // Track which setting we're editing (0 = motor, 1 = buzzer, 2 = hydra, 3 = price per hour, 4 = gain factor)
 
@@ -71,6 +70,7 @@ void loop() {
     if (dashboardMode) {
       dashboardMode = false;  // Enter settings mode
       inSettingsMode = true;  // Enable settings mode
+      settingIndex = 0;       // Start from the beginning of the settings (Motor Duration)
       lcd.clear();
     } else {
       dashboardMode = true;  // Enter dashboard mode
@@ -178,6 +178,13 @@ void handleSetting(int settingArray[]) {
     settingIndex++;  // Move to the next setting
     if (settingIndex > 4) {
       settingIndex = 0;  // After Gain Factor, return to Motor Duration
+      dashboardMode = true;  // After Gain Factor, go back to dashboard mode
+      inSettingsMode = false;  // Exit settings mode
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Hi");
+      lcd.setCursor(0, 1);
+      lcd.print("        ");
     }
     delay(500);  // Debounce delay
   }
