@@ -1,0 +1,151 @@
+#include <EEPROM.h>
+
+// Pin Definitions
+const int hydraulicButtonPin = 2;    // Pin for hydraulic button (Manual mode)
+const int manualMotoronButtonPin = 3;  // Pin for manual motor button (Manual mode)
+const int selector1Pin = 4;           // Pin for selector1 (Auto mode)
+const int selector2Pin = 5;           // Pin for selector2 (Auto mode)              // Pin for mode detection (Auto/Manual)
+const int hydraulicRelayPin = 6;      // Pin for hydraulic relay
+const int motorRelayPin = 7;          // Pin for motor relay
+const int buzzerRelayPin = 8;         // Pin for buzzer relay
+const int modePin = 13; 
+// Variables to store button states
+bool hydraulicButtonState = false;
+bool manualMotoronButtonState = false;
+bool selector1State = false;
+bool selector2State = false;
+bool modeIsManual = false;
+bool selector2FirstPress = false;  // Track first press of selector2
+unsigned long selector2FirstPressTime = 0;  // Timer to track the delay between presses of selector2
+
+// Cycle Count
+int cycleCount = 0;
+
+// Timing constants for Auto Mode
+const unsigned long selector2Delay = 6000;  // 6 seconds delay after the second press of selector2
+const unsigned long buzzerDuration = 3000;  // 3 seconds for buzzer relay
+
+void setup() {
+  // Initialize relay pins as output
+  pinMode(hydraulicRelayPin, OUTPUT);
+  pinMode(motorRelayPin, OUTPUT);
+  pinMode(buzzerRelayPin, OUTPUT);
+
+  // Initialize button pins as input
+  pinMode(hydraulicButtonPin, INPUT_PULLUP);  // Use pull-up resistors for button inputs
+  pinMode(manualMotoronButtonPin, INPUT_PULLUP);
+  pinMode(selector1Pin, INPUT_PULLUP);
+  pinMode(selector2Pin, INPUT_PULLUP);
+  pinMode(modePin, INPUT_PULLUP);  // Set modePin as input to detect manual mode
+
+  // Set relays to HIGH for safety at startup (turn off relays initially)
+  digitalWrite(hydraulicRelayPin, HIGH);
+  digitalWrite(motorRelayPin, HIGH);
+  digitalWrite(buzzerRelayPin, HIGH);
+
+  // Read the saved cycle count from EEPROM
+  cycleCount = EEPROM.read(0);  // Read the cycle count from EEPROM (stored at address 0)
+
+  // Initially check mode at startup
+  checkMode();
+}
+
+void loop() {
+  // Continuously check if the mode needs to change
+  checkMode();
+
+  // Handle Manual Mode actions
+  if (modeIsManual) {
+    handleManualMode();
+  }
+  // Handle Auto Mode actions
+  else {
+    handleAutoMode();
+  }
+}
+
+// Function to check if the mode should be Manual or Auto
+void checkMode() {
+  // If Pin 13 is shorted to GND, it's Manual Mode
+  if (digitalRead(modePin) == LOW) {
+    modeIsManual = true;
+  } else {
+    modeIsManual = false;
+  }
+}
+
+// Function to handle Manual Mode
+void handleManualMode() {
+  // Read hydraulic button state
+  hydraulicButtonState = digitalRead(hydraulicButtonPin) == LOW;  // Active LOW
+  manualMotoronButtonState = digitalRead(manualMotoronButtonPin) == LOW;  // Active LOW
+
+  // Hydraulic Button control (turn hydraulic relay on/off)
+  if (hydraulicButtonState) {
+    digitalWrite(hydraulicRelayPin, LOW);  // Turn ON hydraulic relay (Active LOW)
+  } else {
+    digitalWrite(hydraulicRelayPin, HIGH);  // Turn OFF hydraulic relay
+  }
+
+  // Manual Motor button control (turn motor relay on/off)
+  if (manualMotoronButtonState) {
+    digitalWrite(motorRelayPin, LOW);  // Turn ON motor relay (Active LOW)
+  } else {
+    digitalWrite(motorRelayPin, HIGH);  // Turn OFF motor relay
+  }
+}
+
+// Function to handle Auto Mode
+void handleAutoMode() {
+  // Read the state of the selector buttons
+  selector1State = digitalRead(selector1Pin) == LOW;  // Active LOW
+  selector2State = digitalRead(selector2Pin) == LOW;  // Active LOW
+
+  // Handle Selector1 (Motor and Buzzer Relay simultaneous on)
+  if (selector1State) {
+    digitalWrite(motorRelayPin, LOW);  // Turn ON Motor Relay (Active LOW)
+    digitalWrite(buzzerRelayPin, LOW);  // Turn ON Buzzer Relay (Active LOW)
+    
+    // Wait for 10 seconds for Motor Relay to be on
+    delay(10000);  // Motor Relay stays on for 10 seconds
+    
+    // After 10 seconds, turn off Motor Relay (but keep Buzzer Relay on)
+    digitalWrite(motorRelayPin, HIGH);  // Turn OFF Motor Relay (Active HIGH)
+    
+    // Wait for 3 more seconds with Buzzer Relay still on
+    delay(3000);  // Wait for 3 seconds with Buzzer Relay ON
+    
+    // Now turn off the Buzzer Relay after the 3 seconds
+    digitalWrite(buzzerRelayPin, HIGH);  // Turn OFF Buzzer Relay (Active HIGH)
+  }
+
+  // Handle Selector2 behavior (first and second press)
+  if (selector2State) {
+    // First press of Selector2 (if not already pressed)
+    if (!selector2FirstPress) {
+      selector2FirstPress = true;
+      selector2FirstPressTime = millis();  // Start timing the first press
+      // Turn on the Buzzer Relay for 3 seconds
+      digitalWrite(buzzerRelayPin, LOW);  // Turn ON Buzzer Relay (Active LOW)
+      delay(3000);  // Wait for 3 seconds
+      digitalWrite(buzzerRelayPin, HIGH); // Turn OFF Buzzer Relay (Active HIGH)
+    } else {
+      // If the second press of Selector2 is within 6 seconds after the first press
+      if (millis() - selector2FirstPressTime >= selector2Delay) {
+        // Turn on the Buzzer Relay for 3 seconds again
+        digitalWrite(buzzerRelayPin, LOW);  // Turn ON Buzzer Relay (Active LOW)
+        delay(3000);  // Wait for 3 seconds
+        digitalWrite(buzzerRelayPin, HIGH); // Turn OFF Buzzer Relay (Active HIGH)
+
+        // After 6-second delay, turn on the Hydraulic Relay for 10 seconds
+        digitalWrite(hydraulicRelayPin, LOW);  // Turn ON Hydraulic Relay (Active LOW)
+        delay(10000);  // Wait for 10 seconds
+        digitalWrite(hydraulicRelayPin, HIGH); // Turn OFF Hydraulic Relay (Active HIGH)
+
+        // Increment the cycle count and save it to EEPROM
+        cycleCount++;
+        EEPROM.write(0, cycleCount);  // Save the updated cycle count to EEPROM
+      }
+    }
+  }
+}
