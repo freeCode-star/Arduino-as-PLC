@@ -1,7 +1,9 @@
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>                  // Include the EEPROM library
 #include <Wire.h>                    // Include Wire library for I2C
+#include <RTClib.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // Initialize the LCD
+RTC_DS3231 rtc;
 const int openSettingsPin = 9;       // Pin for the button to open settings
 const int incrementPin = 10;         // Pin for the button to increment the blinking digit
 const int shiftPin = 11;             // Pin for the button to move the blinking cursor to the next digit
@@ -47,10 +49,10 @@ unsigned long buzzerDuration = 0;        // 3 seconds for buzzer relay
 unsigned long motorOnTimeInAuto = 0;      // 10 sec
 unsigned long hydraulicOnTimeInAuto = 0;  // 10 sec
 unsigned long totalCount  = 0;
-// unsigned long b  = 0;
-// unsigned long c  = 0;
-// unsigned long d  = 0;
-// unsigned long   = 0;
+unsigned long resetPressStartTime = 0;
+bool isResetPressed = false;
+const int resetTimeout = 3000; // 3 seconds timeout (3000 ms)
+unsigned long lastTimeSaved = 0;  // Variable to track when to save RTC time
 // end here
 void setup() {
   //here
@@ -79,17 +81,36 @@ void setup() {
   // pricePerBarelfrom = 10;
   lcd.init();       // Initialize the LCD
   lcd.backlight();  // Turn on the LCD backlight
+  if (!rtc.begin()) {
+    lcd.print("RTC not found!");
+    while (1);
+  }
+  rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // Adjust RTC to compile time
   lcd.clear();      // Clear the LCD display
-  lcd.setCursor(0, 0);
-  lcd.print("AUM AUTOMATION");  // Display "HI" at power-on
-  delay(2000);                  // Display "HI" for 2 seconds
+    // slideText("AUM AUTOMATION ENGINEERING", 250);
+      String text = " AUM AUTOMATION ENGINEERING ";
+  
+  // Scroll the text
+  for (int position = 0; position < text.length(); position++) {
+    lcd.clear();
+    lcd.setCursor(0, 0);  // Start at the first column, first row
+    lcd.print(text.substring(position, position + 16)); // Display 16 characters
+    delay(300); // Adjust delay for scroll speed
+  }
+  // lcd.setCursor(0, 0);
+  // lcd.print("AUM AUTOMATION");  // Display "HI" at power-on
+  // delay(2000);                  // Display "HI" for 2 seconds
   lcd.clear();                  // Clear the screen after the greeting
   // Load settings from EEPROM
   loadSettingsFromEEPROM();
- 
+   restoreRTCFromEEPROM();
 }
 
 void loop() {
+    // Read the state of pin 10 and pin 11
+  int pin10State = digitalRead(incrementPin);
+  int pin11State = digitalRead(shiftPin);
+    restCountAndTime(pin10State, pin11State);
   // Continuously check if the mode needs to change
   checkMode();
   // Handle Manual Mode actions
@@ -123,9 +144,6 @@ void loop() {
 
   if (dashboardMode) {
     showDashboardCurrentCount();
-    // lcd.setCursor(0, 0);
-    // lcd.print("Count:");
-    //   lcd.print(totalCount);
   }
 
   // If we're in settings mode, handle all settings
@@ -155,43 +173,44 @@ void loop() {
       handleSirenSoundSetting();  // Handle Siren Sound setting
     }
   }
+  DateTime now = rtc.now();  // Get current time from RTC
+  // Calculate hours and minutes
+  int hours = now.hour();
+  int minutes = now.minute();
+    lcd.setCursor(10, 1);
+  lcd.print("H");
+  if (hours < 10) lcd.print("0");  // Add leading zero if hours < 10
+  lcd.print(hours);
+  lcd.print(":");
+  if (minutes < 10) lcd.print("0");  // Add leading zero if minutes < 10
+  lcd.print(minutes);
+    // Save RTC time to EEPROM every 2 minutes
+  unsigned long currentMillis = millis();
+  if (currentMillis - lastTimeSaved >= 60000) {  // Check if 2 minutes have passed (120000 ms)
+    saveRTCToEEPROM(now);
+    lastTimeSaved = currentMillis;  // Update the last saved time
+  }
 }
 
 // Load settings from EEPROM
 void loadSettingsFromEEPROM() {
-  // pricePerBaleArray[0] = EEPROM.read(0);
-  // pricePerBaleArray[1] = EEPROM.read(1);
-  // pricePerBaleArray[2] = EEPROM.read(2);
-  // pricePerBaleArray[3] = EEPROM.read(3);
-  // setPricePerBale = pricePerBaleArray[0] * 1000 + pricePerBaleArray[1] * 100 + pricePerBaleArray[2] * 10 + pricePerBaleArray[3];
   setPricePerBale = calculatePricePerBale(0);
   hydraulicOnTimeInAuto = calculateHydraulicTime(4);
   motorOnTimeInAuto = calculateMotorTime(6);
   selector2Delay = calculateDelay(8);
   buzzerDuration = calculateBuzzerDuration(9);
-  motorOnTimeInAuto = motorOnTimeInAuto - buzzerDuration ;
+  // motorOnTimeInAuto = motorOnTimeInAuto - buzzerDuration ;
   totalCount = EEPROM.read(10); // Read total count from EEPROM
-
-  // baleEjectArray[0] = EEPROM.read(4);
-  // baleEjectArray[1] = EEPROM.read(5);
-  // hydraulicOnTimeInAuto = (baleEjectArray[0] * 10 + baleEjectArray[1]) * 1000;
-  
-  // yarnFeederArray[0] = EEPROM.read(6);
-  // yarnFeederArray[1] = EEPROM.read(7);
-  // motorOnTimeInAuto = (yarnFeederArray[0] * 10 + yarnFeederArray[1]) * 1000;
-
-  // gainFactorArray[0] = EEPROM.read(8);
-  // selector2Delay = (gainFactorArray[0]) * 1000;
-
-  // sirenSoundArray[0] = EEPROM.read(9);
-  // buzzerDuration = (sirenSoundArray[0]) * 1000;
-  // totalCount = EEPROM.read(10);
 }
 
 // Handle setting values for other settings
 void handleSetting(int settingArray[]) {
   unsigned long currentMillis = millis();
-
+  static bool pricePerBarrelCleared = false;  // Flag to track if it's cleared already
+  if (!pricePerBarrelCleared) {
+    lcd.clear();
+    pricePerBarrelCleared = true;  // Set flag to indicate it has been cleared
+  }
   // Check if it's time to blink the digit
   if (currentMillis - previousMillis >= blinkInterval) {
     previousMillis = currentMillis;  // Update the time for next blink
@@ -322,10 +341,13 @@ void handleBaleEjectSetting() {
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Setting Saved");
+      lcd.clear();
       delay(2000);  // Wait for 2 seconds
       lcd.clear();
+      showDashboardCurrentCount();
     }
     delay(500);  // Debounce delay
+    lcd.clear();
   }
 }
 
@@ -565,47 +587,49 @@ void handleAutoMode() {
   // Read the state of the selector buttons
   selector1State = digitalRead(selector1Pin) == LOW;  // Active LOW
   selector2State = digitalRead(selector2Pin) == LOW;  // Active LOW
+
   // Handle Selector1 (Motor and Buzzer Relay simultaneous on)
   if (selector1State) {
-    digitalWrite(motorRelayPin, LOW);   // Turn ON Motor Relay (Active LOW)
-    digitalWrite(buzzerRelayPin, LOW);  // Turn ON Buzzer Relay (Active LOW)
-        // Wait for 3 more seconds with Buzzer Relay still on
-    delay(buzzerDuration);  // Wait for 3 seconds with Buzzer Relay ON
-    // Now turn off the Buzzer Relay after the 3 seconds
-    digitalWrite(buzzerRelayPin, HIGH);  // Turn OFF Buzzer Relay (Active HIGH)
-    // Wait for 10 seconds for Motor Relay to be on
-    delay(motorOnTimeInAuto);  // Motor Relay stays on for 10 seconds
-    // After 10 seconds, turn off Motor Relay (but keep Buzzer Relay on)
+    digitalWrite(motorRelayPin, LOW);  // Turn ON Motor Relay (Active LOW)
+    digitalWrite(buzzerRelayPin, LOW); // Turn ON Buzzer Relay (Active LOW)
+    delay(buzzerDuration);  // Wait for buzzer duration
+    digitalWrite(buzzerRelayPin, HIGH); // Turn OFF Buzzer Relay (Active HIGH)
+    delay(motorOnTimeInAuto);  // Motor relay stays on for some time (10 seconds)
     digitalWrite(motorRelayPin, HIGH);  // Turn OFF Motor Relay (Active HIGH)
-
   }
 
-  // Handle Selector2 behavior (first and second press)
+  // Handle Selector2 behavior (first and second press alternation)
   if (selector2State) {
-    // First press of Selector2 (if not already pressed)
+    // If first press of Selector2
     if (!selector2FirstPress) {
-      selector2FirstPress = true;
-      selector2FirstPressTime = millis();  // Start timing the first press
-      // Turn on the Buzzer Relay for 3 seconds
+      selector2FirstPress = true;  // Mark as first press
+      selector2FirstPressTime = millis();  // Store time of first press
+      // Turn on the buzzer for 3 seconds
       digitalWrite(buzzerRelayPin, LOW);   // Turn ON Buzzer Relay (Active LOW)
       delay(buzzerDuration);               // Wait for 3 seconds
       digitalWrite(buzzerRelayPin, HIGH);  // Turn OFF Buzzer Relay (Active HIGH)
-    } else {
-      // If the second press of Selector2 is within 6 seconds after the first press
+    } 
+    else {
+      // If second press of Selector2 (cycle continues)
       if (millis() - selector2FirstPressTime >= selector2Delay) {
-        // Turn on the Buzzer Relay for 3 seconds again
+        // Turn on the buzzer for 3 seconds again
         digitalWrite(buzzerRelayPin, LOW);   // Turn ON Buzzer Relay (Active LOW)
         delay(buzzerDuration);               // Wait for 3 seconds
         digitalWrite(buzzerRelayPin, HIGH);  // Turn OFF Buzzer Relay (Active HIGH)
-        // After 6-second delay, turn on the Hydraulic Relay for 10 seconds
+
+        // After 6-second delay, activate Hydraulic Relay for 10 seconds
         digitalWrite(hydraulicRelayPin, LOW);   // Turn ON Hydraulic Relay (Active LOW)
         delay(hydraulicOnTimeInAuto);           // Wait for 10 seconds
         digitalWrite(hydraulicRelayPin, HIGH);  // Turn OFF Hydraulic Relay (Active HIGH)
+
         // Increment the cycle count and save it to EEPROM
         cycleCount++;
         EEPROM.write(10, cycleCount);  // Save the updated cycle count to EEPROM
-        totalCount = EEPROM.read(10);
-        showDashboardCurrentCount();
+        totalCount = EEPROM.read(10);  // Read the total count back from EEPROM
+        showDashboardCurrentCount();   // Update the display with the new count
+
+        // Reset first press flag to start a new cycle for next press
+        selector2FirstPress = false;
       }
     }
   }
@@ -665,11 +689,67 @@ long calculateBuzzerDuration(int address) {
   return sirenSoundArray[0] * 1000;
 }
 
-void showDashboardCurrentCount(){
+void showDashboardCurrentCount() {
+    // lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Count:");
-      lcd.print(totalCount);
-        lcd.setCursor(0, 1);
+    lcd.print(totalCount);  // Assuming totalCount is updated to the correct value
+    lcd.setCursor(0, 1);
     lcd.print("Rs");
-    lcd.print(totalCount*setPricePerBale);
+    lcd.print(totalCount * setPricePerBale);  // Assuming you have setPricePerBale defined
 }
+
+void restCountAndTime(int pin10State, int pin11State) { 
+    // Check if both pin 10 and pin 11 are shorted to GND (low state)
+  if (pin10State == LOW && pin11State == LOW) {
+    if (!isResetPressed) {
+      // Start counting when the reset condition is pressed for the first time
+      resetPressStartTime = millis();
+      isResetPressed = true;
+    }
+
+    // Check if 3 seconds have passed
+    if (millis() - resetPressStartTime >= resetTimeout) {
+      // Set EEPROM value at address 10 to 0 (reset the value)
+      EEPROM.write(10, 0);      
+      
+      // After resetting EEPROM, update the totalCount variable
+      totalCount = EEPROM.read(10);  // Read the value back from EEPROM to ensure it's updated
+      
+      // Optionally reset the reset value to 0 after updating EEPROM
+      int resetValue = 0; // Reset the variable to 0
+      // Reset the RTC time to 00:00 (midnight)
+      rtc.adjust(DateTime(2024, 1, 1, 0, 0, 0));  // Set date and time to January 1st, 00:00:00
+            // Refresh the display
+      showDashboardCurrentCount();
+    }
+  } else {
+    // If reset condition is not met, reset the isResetPressed flag
+    isResetPressed = false;
+  }
+}
+
+// Function to restore the RTC time from EEPROM (if saved)
+void restoreRTCFromEEPROM() {
+  int hour = EEPROM.read(11);   // Read hour from EEPROM address 11
+  int minute = EEPROM.read(12); // Read minute from EEPROM address 12
+  int second = EEPROM.read(13); // Read second from EEPROM address 13
+
+  // If we have valid time values in EEPROM, set the RTC time accordingly
+  if (hour >= 0 && hour < 24 && minute >= 0 && minute < 60 && second >= 0 && second < 60) {
+    rtc.adjust(DateTime(2024, 1, 1, hour, minute, second));  // Restore RTC time
+  }
+}
+
+// Function to save the RTC time to EEPROM (starting from address 11)
+void saveRTCToEEPROM(DateTime now) {
+  int addr = 11;  // Starting EEPROM address after 10 (which is reserved for totalCount)
+  // Store the hour, minute, and second in EEPROM
+  EEPROM.write(addr, now.hour());     // Store hour at address 11
+  EEPROM.write(addr + 1, now.minute()); // Store minute at address 12
+  EEPROM.write(addr + 2, now.second()); // Store second at address 13
+
+}
+
+// Function to slide text from right to left
+
