@@ -1,0 +1,408 @@
+Relay Control with Push Buttons:
+
+When HydraulicButton is pressed, hydraulicRelay is activated, and it turns off when the button is released.
+When ManualMotoronbutton is pressed, Motorrelay is activated, and it turns off when the button is released.
+Timed Relay Activation:
+
+When selector1 is pressed and released, Motorrelay turns on for 10 seconds, and BuzzerRelay turns on for 3 seconds. This cycle repeats each time the button is pressed.
+Timed Relay for Safety Feature:
+
+When selector2 is pressed and released, BuzzerRelay turns on for 3 seconds to ensure safe operation.
+
+manual Mode:
+when HydraulicButton pressed then hydraulicRelay is activated, and it turns off when the button is released.
+When ManualMotoronbutton is pressed, Motorrelay is activated, and it turns off when the button is released.
+
+AutoMode:
+When selector1(Button name as selector1) is pressed and released, Motorrelay turns on for 10 seconds, and BuzzerRelay turns on for 3 seconds.
+
+When selector2 is pressed and released, BuzzerRelay turns on for 3 seconds and after some sec selector2 again pressed and release then BuzzerRelay on again for 3sec and after 6 sec hydraulicRelay for 10 sec.
+that means one cycle in auto mode.
+
+this cycle continoue now your logic how you continue this cycle without any issue coz we need to know or save some where first time selector2 pressed and when pressed and relesed on second time we have to on hydraulic relay after 6 sec cycle off
+
+we have to save in our eeprom how many times hydraulicRelay ON either by auto or manual we have to claculate 
+Note: when my relay card get digital write LOW then relay on if HIGH relay off
+when GND and pin 13 short then it means manual mode else auto mode 
+when in manual selector2 functionality not effect it will same for auto and manual 
+when in auto mode then hydraulicbutton and manualmotorbutton not work it works only in manual mode 
+
+Based on your description, here's my understanding of the system you're trying to implement for your Arduino-based PLC:
+
+### Manual Mode:
+- **HydraulicButton**:
+  - When pressed, it activates the **hydraulicRelay**.
+  - When released, it turns off the **hydraulicRelay**.
+  
+- **ManualMotoronButton**:
+  - When pressed, it activates the **MotorRelay**.
+  - When released, it turns off the **MotorRelay**.
+
+### Auto Mode:
+- **Selector1 Button**:
+  - When pressed and released, it activates the **MotorRelay** for 10 seconds.
+  - Simultaneously, the **BuzzerRelay** is activated for 3 seconds.
+
+- **Selector2 Button**:
+  - When pressed and released, it activates the **BuzzerRelay** for 3 seconds.
+  - After some seconds, when **Selector2** is pressed and released again, it activates the **BuzzerRelay** for another 3 seconds.
+  - After **Selector2** is pressed the second time, wait for 6 seconds, then activate the **HydraulicRelay** for 10 seconds.
+  - This cycle continues in **AutoMode**.
+
+### Key Requirements:
+1. **Manual vs. Auto Mode Detection**:
+   - When pin 13 is connected to **GND**, it indicates **Manual Mode**.
+   - If pin 13 is not connected to **GND**, it indicates **Auto Mode**.
+   
+2. **Selector2 in Manual Mode**:
+   - In **Manual Mode**, **Selector2** should not affect the system, meaning it should only work in **Auto Mode**.
+
+3. **EEPROM for Hydraulic Relay Activation Count**:
+   - You need to track how many times the **HydraulicRelay** is activated, whether in **Manual Mode** or **Auto Mode**, and store that count in the EEPROM.
+
+4. **Relay Logic**:
+   - A **LOW** signal on a relay pin turns the relay **ON**.
+   - A **HIGH** signal on the relay pin turns the relay **OFF**.
+
+### Logic to Implement:
+
+- **Detect Mode**: At startup, check the state of pin 13. If pin 13 is connected to **GND**, set the system to **Manual Mode**; otherwise, set it to **Auto Mode**.
+  
+- **Manual Mode Logic**:
+  - Allow **HydraulicButton** and **ManualMotoronButton** to control their respective relays.
+  
+- **Auto Mode Logic**:
+  - **Selector1 Pressed**:
+    - On press and release, turn on **MotorRelay** for 10 seconds.
+    - Turn on **BuzzerRelay** for 3 seconds simultaneously.
+  
+  - **Selector2 Pressed**:
+    - On first press and release:
+      - Turn on **BuzzerRelay** for 3 seconds.
+      - Wait for a few seconds.
+    - On second press and release:
+      - Turn on **BuzzerRelay** for 3 seconds.
+      - Wait for 6 seconds.
+      - Turn on **HydraulicRelay** for 10 seconds.
+    - After the cycle, repeat it continuously in Auto Mode.
+
+- **EEPROM Storage**:
+  - Store the number of times the **HydraulicRelay** is activated in the EEPROM.
+  - Every time the **HydraulicRelay** is activated (whether in **Manual** or **Auto Mode**), update the EEPROM count.
+  - At startup, load the count from EEPROM and keep track of it.
+
+### Challenges and Considerations:
+- **State Management**:
+  - In **Auto Mode**, you need to track the state of **Selector2**. Use a simple flag to track whether it's the first or second press of **Selector2**, as well as when to initiate the 6-second wait before activating the **HydraulicRelay**.
+  
+- **EEPROM Writing**:
+  - Since EEPROM has a limited number of write cycles, be careful not to write to it too frequently. Update the EEPROM count only when necessary (e.g., every time the **HydraulicRelay** is turned on, but not on every loop iteration).
+  
+- **Cycle Control**:
+  - Ensure the cycle (from **Selector2** pressing to activating the **HydraulicRelay**) continues without interruption. Use timers or `millis()` to handle timing (e.g., 6 seconds delay before the **HydraulicRelay**).
+
+---
+
+### Plan for Code:
+1. **Setup mode detection** on pin 13 at startup.
+2. **Handle Manual Mode** by monitoring buttons and controlling relays directly.
+3. **Handle Auto Mode** by implementing the cycle logic for **Selector1** and **Selector2**, using `millis()` for timing control.
+4. **Store hydraulic activation count** in EEPROM and update it whenever the **HydraulicRelay** is activated.
+
+Let me know if you'd like me to help with code or any specific section of this logic!
+
+
+Thank you for the clarification. Based on your request, here’s the **final, revised problem statement** with the addition of tracking the number of completed cycles using **EEPROM** to store the count.
+
+---
+
+### **Final Auto Mode Problem Statement:**
+
+---
+
+#### **1. Selector1 Behavior:**
+
+- **When Selector1 is pressed:**
+  - **Motor Relay** and **Buzzer Relay** are **both turned on** simultaneously.
+  - **Motor Relay** stays on for **10 seconds**.
+  - **Buzzer Relay** stays on for **3 seconds**.
+  - After **3 seconds**, the **Buzzer Relay** turns off.
+  - After **10 seconds**, the **Motor Relay** turns off.
+
+---
+
+#### **2. Selector2 Behavior:**
+
+- **When Selector2 is pressed and released for the first time:**
+  - **Buzzer Relay** turns on for **3 seconds**.
+
+- **When Selector2 is pressed and released for the second time:**
+  - **Buzzer Relay** turns on for **3 seconds**.
+  - After **3 seconds** of the **Buzzer Relay** being on, a **6-second timer** starts.
+  - When the **6-second timer** completes, the **Hydraulic Relay** turns on for **10 seconds**.
+
+- **After the Hydraulic Relay is on for 10 seconds** (at the end of this cycle):
+  - The cycle is considered complete, and the **EEPROM** count is incremented.
+  - The count represents how many cycles the system has completed.
+  
+---
+
+#### **3. Mode Change (Manual or Auto Mode):**
+
+- **Auto Mode**:
+  - When **Pin 13** is **not** shorted to **GND**, the system is in **Auto Mode**.
+  
+- **Manual Mode**:
+  - When **Pin 13** is shorted to **GND**, the system switches to **Manual Mode**.
+
+---
+
+#### **4. Safety:**
+  - Initially, all relays (Hydraulic, Motor, and Buzzer) should be off by setting them to **HIGH** (to turn off the relays) for safety.
+
+---
+
+#### **5. EEPROM Count:**
+  - After each cycle of **Selector2**, when the **Hydraulic Relay** turns on for 10 seconds, the system will increment the **cycle count** in the **EEPROM**.
+  - The **EEPROM** stores the total count of completed cycles.
+  - Each time the system enters a new cycle (after the Hydraulic Relay is turned on), the count will be saved in the **EEPROM** to persist the data across resets and power cycles.
+
+---
+
+### **Behavior Summary:**
+
+1. **Selector1 Press:**
+   - Both **Motor Relay** and **Buzzer Relay** are turned on **simultaneously**.
+   - **Motor Relay** stays on for **10 seconds**.
+   - **Buzzer Relay** stays on for **3 seconds**.
+   - After 3 seconds, **Buzzer Relay** turns off.
+   - After 10 seconds, **Motor Relay** turns off.
+
+2. **Selector2 Press (First time):**
+   - **Buzzer Relay** turns on for **3 seconds**.
+
+3. **Selector2 Press (Second time):**
+   - **Buzzer Relay** turns on for **3 seconds** again.
+   - After **Buzzer Relay** turns off, a **6-second timer** starts.
+   - After the 6-second delay, the **Hydraulic Relay** turns on for **10 seconds**.
+   - After 10 seconds, the **Hydraulic Relay** turns off.
+   - The **cycle count** in **EEPROM** is incremented by **1**.
+
+4. **Cycle Count Storage:**
+   - After each completed cycle (after the Hydraulic Relay turns on for 10 seconds), the **cycle count** will be saved to the **EEPROM**.
+   - The **EEPROM** stores the count of completed cycles, starting from **0**.
+   - The count is updated each time the cycle completes.
+
+---
+
+### **Clarified Steps for Auto Mode Cycle:**
+
+1. **First Press of Selector2:**
+   - **Buzzer Relay** turns on for **3 seconds**.
+
+2. **Second Press of Selector2:**
+   - **Buzzer Relay** turns on again for **3 seconds**.
+   - After **3 seconds**, a **6-second timer** begins.
+   - Once the **6-second timer** completes, the **Hydraulic Relay** turns on for **10 seconds**.
+
+3. **After Hydraulic Relay turns off (after 10 seconds):**
+   - The **cycle count** in **EEPROM** is incremented by **1**.
+   - This cycle is now complete, and the system is ready for the next cycle.
+
+---
+
+### **Next Steps for Code:**
+Based on the above problem statement, the system will:
+1. Detect when **Selector2** is pressed and released.
+2. Execute the sequence of turning relays on and off as described.
+3. After each cycle, increment the **cycle count** stored in **EEPROM**.
+4. Provide persistent cycle tracking across resets and power cycles.
+
+Would you like me to proceed with the **code** that implements this revised logic, including the **EEPROM** functionality?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#include <EEPROM.h>
+
+// Pin Definitions
+const int selector1Pin = 4;        // Pin for selector1 (auto mode)
+const int selector2Pin = 5;        // Pin for selector2 (auto mode)
+const int hydraulicRelayPin = 6;   // Pin for hydraulic relay
+const int motorRelayPin = 7;       // Pin for motor relay
+const int buzzerRelayPin = 8;      // Pin for buzzer relay
+const int modePin = 13;            // Pin for mode detection (auto or manual)
+
+// Variables for button states
+bool selector1State = false;
+bool selector2State = false;
+bool modeIsManual = false;
+bool selector2FirstPress = false;  // Track first press of selector2
+
+// Variables for timing
+unsigned long selector2FirstPressTime = 0;  // Timer to track the delay between presses of selector2
+
+// Cycle Count
+int cycleCount = 0;
+
+// Timing constants
+const unsigned long selector2Delay = 6000;  // 6 seconds delay after the second press of selector2
+const unsigned long buzzerDuration = 3000;  // 3 seconds for buzzer relay
+
+void setup() {
+  // Initialize relay pins as output
+  pinMode(hydraulicRelayPin, OUTPUT);
+  pinMode(motorRelayPin, OUTPUT);
+  pinMode(buzzerRelayPin, OUTPUT);
+
+  // Initialize selector pins as input
+  pinMode(selector1Pin, INPUT_PULLUP);
+  pinMode(selector2Pin, INPUT_PULLUP);
+  pinMode(modePin, INPUT_PULLUP);  // Set modePin as input to detect manual mode
+
+  // Set relays to HIGH for safety at startup (turn off relays initially)
+  digitalWrite(hydraulicRelayPin, HIGH);
+  digitalWrite(motorRelayPin, HIGH);
+  digitalWrite(buzzerRelayPin, HIGH);
+
+  // Read the saved cycle count from EEPROM
+  cycleCount = EEPROM.read(0);  // Read the cycle count from EEPROM (stored at address 0)
+
+  // Initially check mode at startup
+  checkMode();
+}
+
+void loop() {
+  // Continuously check if the mode needs to change
+  checkMode();
+
+  // Handle Auto Mode actions
+  if (!modeIsManual) {
+    handleAutoMode();
+  }
+}
+
+// Function to check if the mode should be Manual or Auto
+void checkMode() {
+  // If Pin 13 is shorted to GND, it's Manual Mode
+  if (digitalRead(modePin) == LOW) {
+    modeIsManual = true;
+  } else {
+    modeIsManual = false;
+  }
+}
+
+// Function to handle Auto Mode
+void handleAutoMode() {
+  // Read the state of the selector buttons
+  selector1State = digitalRead(selector1Pin) == LOW;  // Active LOW
+  selector2State = digitalRead(selector2Pin) == LOW;  // Active LOW
+
+  if (selector1State) {
+    // Both Motor Relay and Buzzer Relay should turn on simultaneously
+    digitalWrite(motorRelayPin, LOW);  // Turn ON Motor Relay (Active LOW)
+    digitalWrite(buzzerRelayPin, LOW);  // Turn ON Buzzer Relay (Active LOW)
+        // Wait for 3 more seconds with Buzzer Relay still on
+    delay(3000);  // Wait for 3 seconds with Buzzer Relay ON
+    
+    // Now turn off the Buzzer Relay after the 3 seconds
+    digitalWrite(buzzerRelayPin, HIGH);  // Turn OFF Buzzer Relay (Active HIGH)
+    // Wait for 10 seconds for Motor Relay to be on
+    delay(10000);  // Motor Relay stays on for 10 seconds
+    
+    // After 10 seconds, turn off Motor Relay (but keep Buzzer Relay on)
+    digitalWrite(motorRelayPin, HIGH);  // Turn OFF Motor Relay (Active HIGH)
+    
+  }
+
+  // Handle Selector2 behavior (first and second press)
+  if (selector2State) {
+    // First press of Selector2 (if not already pressed)
+    if (!selector2FirstPress) {
+      selector2FirstPress = true;
+      selector2FirstPressTime = millis();  // Start timing the first press
+      // Turn on the Buzzer Relay for 3 seconds
+      digitalWrite(buzzerRelayPin, LOW);  // Turn ON Buzzer Relay (Active LOW)
+      delay(3000);  // Wait for 3 seconds
+      digitalWrite(buzzerRelayPin, HIGH); // Turn OFF Buzzer Relay (Active HIGH)
+    } else {
+      // If the second press of Selector2 is within 6 seconds after the first press
+      if (millis() - selector2FirstPressTime >= selector2Delay) {
+        // Turn on the Buzzer Relay for 3 seconds again
+        digitalWrite(buzzerRelayPin, LOW);  // Turn ON Buzzer Relay (Active LOW)
+        delay(3000);  // Wait for 3 seconds
+        digitalWrite(buzzerRelayPin, HIGH); // Turn OFF Buzzer Relay (Active HIGH)
+
+        // After 6-second delay, turn on the Hydraulic Relay for 10 seconds
+        digitalWrite(hydraulicRelayPin, LOW);  // Turn ON Hydraulic Relay (Active LOW)
+        delay(10000);  // Wait for 10 seconds
+        digitalWrite(hydraulicRelayPin, HIGH); // Turn OFF Hydraulic Relay (Active HIGH)
+
+        // Increment the cycle count and save it to EEPROM
+        cycleCount++;
+        EEPROM.write(0, cycleCount);  // Save the updated cycle count to EEPROM
+      }
+    }
+  }
+}
+
+
+const unsigned long selector2Delay = 6000;  // 6 seconds delay after the second press of selector2
+const unsigned long buzzerDuration = 3000;  // 3 seconds for buzzer relay
+const unsigned long motorOnTimeInAuto = 10000 // 10 sec 
+const unsigned long hydraulicOnTimeInAuto = 10000 // 10 sec 
+
+i need to fetch this from eeprom when power on and even on run time when user change 
+pricePerBaleArray = pricePerBale make a new variable and store this i guess i did not make tihs 
+baleEjectArray <- hydraulicOnTimeInAuto
+yarnFeederArray <- motorOnTimeInAuto
+gainFactorArray <- selector2Delay
+sirenSoundArray<-buzzerDuration
+
+did you get ?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
