@@ -83,3 +83,14 @@ Industrial control systems
 # Conclusion
 
 This Arduino-based PLC solution is a flexible, cost-effective approach to controlling relays for various applications. It provides an excellent learning experience for anyone interested in automation systems and microcontroller programming.
+
+Relay Control with Push Buttons:
+
+When HydraulicButton is pressed, Relay 1 is activated, and it turns off when the button is released.
+When ManualMotoronbutton is pressed, Motorrelay is activated, and it turns off when the button is released.
+Timed Relay Activation:
+
+When selector1 is pressed and released, Motorrelay turns on for 10 seconds, and BuzzerRelay turns on for 3 seconds. This cycle repeats each time the button is pressed.
+Timed Relay for Safety Feature:
+
+When selector2 is pressed and released, BuzzerRelay turns on for 3 seconds to ensure safe operation.
